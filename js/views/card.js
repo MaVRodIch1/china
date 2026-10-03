@@ -87,8 +87,12 @@
     }
 
     // Слова
-    root.append(h('section.cd-sec', h('h4', '📖 Слова'), h('ul.list', e.words.map(w =>
+    if (e.words.length) root.append(h('section.cd-sec', h('h4', '📖 Слова'), h('ul.list', e.words.map(w =>
       h('li', h('span.zh', w.w), ' ', ui.py(w.p), h('span.muted', ' — ' + w.m), ui.speakBtn(w.w, 'sm'))))));
+    const shown = new Set(e.words.map(w => w.w));
+    const hskWords = HZ.words.filter(w => w.chars.includes(e.ch) && w.ch !== e.ch && !shown.has(w.ch)).slice(0, 12);
+    if (hskWords.length) root.append(h('section.cd-sec', h('h4', '📚 Слова HSK с этим иероглифом'), h('div.chips', hskWords.map(w =>
+      h('a.chip.link', { href: '#/word/' + encodeURIComponent(w.ch), title: w.m }, w.ch + ' · ' + w.m.split(/[;,(]/)[0].trim())))));
     // Предложения
     if (e.sents.length) root.append(h('section.cd-sec', h('h4', '💬 Примеры и живая речь'), e.sents.map((s, i) =>
       h('div.sent', h('div.zh', s.z, ui.speakBtn(s.z, 'sm'), i ? h('span.tag.sem', 'в живой речи') : null), h('div', ui.py(s.p)), h('div.muted', s.m)))));
@@ -135,5 +139,5 @@
       } }]);
   }
 
-  HZ.card = { detail, stateLabel, addToCollection };
+  HZ.card = { detail: (e, o) => e.isWord ? HZ.wordDetail(e, o) : detail(e, o), stateLabel, addToCollection };
 })();

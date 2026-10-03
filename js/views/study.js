@@ -14,6 +14,9 @@
     } else if (mode === 'new') {
       title = 'Новые иероглифы';
       queue = srs.newList(srs.newBudget()).map(ch => ({ ch, kind: 'intro' }));
+    } else if (mode === 'words') {
+      title = 'Новые слова';
+      queue = srs.newWordList(srs.newWordBudget()).map(k => ({ ch: k, kind: 'intro' }));
     } else if (mode === 'hard') {
       title = 'Сложные иероглифы'; cram = true;
       queue = HZ.shuffle(srs.hardList().slice(0, 20)).map(ch => ({ ch, kind: 'rev' }));
@@ -29,7 +32,7 @@
     if (!queue.length) {
       ui.clear(view).append(h('div.empty',
         h('div.big', '🎉'), h('h2', 'Здесь пока пусто'),
-        h('p.muted', mode === 'new' ? 'Дневной лимит новых иероглифов исчерпан или все иероглифы уже начаты. Лимит можно изменить в настройках.' :
+        h('p.muted', mode === 'new' || mode === 'words' ? 'Дневной лимит новых исчерпан или всё уже начато. Лимит можно изменить в настройках.' :
           mode === 'hard' ? 'Сложных иероглифов пока нет — отличная память!' : 'Все карточки на сегодня повторены.'),
         h('a.btn.primary', { href: '#/' }, 'На главную')));
       return;
@@ -65,7 +68,7 @@
 
     // ---------- оценка ----------
     function gradeCard(g, auto) {
-      const e = HZ.byChar[cur.ch];
+      const e = HZ.entry(cur.ch);
       const wasNew = srs.isNew(cur.ch) || introNew.has(cur.ch);
       let c;
       if (cram) {
@@ -94,7 +97,8 @@
         introNew.add(ch);
         requeue({ ch, kind: 'rev' }, 4);
       }
-      store.today().newc++; stats.newc++; stats.done++;
+      if (HZ.isKey(ch)) store.today().neww = (store.today().neww || 0) + 1; else store.today().newc++;
+      stats.newc++; stats.done++;
       stats.xp += 15; HZ.gami.addXP(15);
       HZ.gami.touch(); HZ.gami.checkQuests(); HZ.gami.check();
       store.save();
@@ -104,7 +108,7 @@
 
     // ---------- отрисовка ----------
     function render() {
-      const e = HZ.byChar[cur.ch];
+      const e = HZ.entry(cur.ch);
       ui.clear(area);
       area.append(header());
       const c = srs.get(cur.ch);
@@ -124,7 +128,7 @@
     }
 
     function renderFlip(card, e) {
-      const front = h('div.flip-front', h('div.big-char.xl', { lang: 'zh' }, e.ch), h('p.muted', 'Вспомните: значение, чтение, состав'));
+      const front = h('div.flip-front', h('div.big-char.xl', { lang: 'zh', style: e.s > 1 && e.isWord ? { fontSize: e.s >= 4 ? '3.2rem' : '4.6rem' } : null }, e.ch), h('p.muted', e.isWord ? 'Вспомните: значение и чтение слова' : 'Вспомните: значение, чтение, состав'));
       card.append(front, ui.speakBtn(e.ch, 'corner'));
       const act = h('div.actions');
       area.append(act);
@@ -145,7 +149,7 @@
     function renderChoice(card, e) {
       const types = ['zh2ru', 'zh2py', 'ru2zh'];
       const type = types[HZ.rand(types.length)];
-      const q = HZ.quiz.makeQuestion(e, type, HZ.chars);
+      const q = HZ.quiz.makeQuestion(e, type, e.isWord ? HZ.words : HZ.chars);
       card.append(h('div.q-prompt', q.prompt), h('p.muted.center', q.sub || ''));
       const opts = h('div.options' + (q.big ? '.big' : ''));
       let answered = false;

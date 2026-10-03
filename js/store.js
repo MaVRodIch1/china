@@ -7,7 +7,7 @@
   const defaults = () => ({
     v: 1,
     created: Date.now(),
-    settings: { theme: 'auto', newPerDay: 5, reviewStyle: 'flip', newSource: 'all', sfx: true, tts: true, rate: 0.8, onboarded: false },
+    settings: { theme: 'auto', newPerDay: 5, newWordsPerDay: 5, reviewStyle: 'flip', newSource: 'all', sfx: true, tts: true, rate: 0.8, onboarded: false },
     cards: {},         // иероглиф -> состояние SRS
     notes: {},         // иероглиф -> {assoc, note}
     collections: [],   // пользовательские подборки [{id,name,chars}]
@@ -53,7 +53,7 @@
     replace(next) { state = Object.assign(defaults(), next, { settings: Object.assign(defaults().settings, next.settings || {}) }); flush(); },
     today() { // журнал за сегодня
       const k = HZ.dayKey();
-      return state.log[k] || (state.log[k] = { rev: 0, ok: 0, newc: 0, xp: 0, games: 0 });
+      return state.log[k] || (state.log[k] = { rev: 0, ok: 0, newc: 0, neww: 0, xp: 0, games: 0 });
     },
     note(ch) { return state.notes[ch] || (state.notes[ch] = { assoc: '', note: '' }); },
     exportJSON() { flush(); return JSON.stringify(state, null, 2); },

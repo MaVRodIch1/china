@@ -57,6 +57,22 @@
     });
   };
 
+  HZ.words = [];          // слова (HSK)
+  HZ.wordByKey = {};      // 'w:слово' -> запись
+  /** Добавить слова: [слово, пиньинь, перевод, уровень HSK, части речи]. Запись совместима с иероглифом (ch, py, m, h …). */
+  HZ.addWords = function (list) {
+    list.forEach(([w, py, m, h, pos]) => {
+      const key = 'w:' + w;
+      if (HZ.wordByKey[key]) return;
+      const e = { ch: w, key, py, m, h, pos: pos ? pos.split(',') : [], s: [...w].length, r: '', th: [], comps: [], mn: '', et: '', words: [], sents: [],
+        isWord: true, chars: [...w].filter(c => c >= '\u4e00' && c <= '\u9fff'), idx: HZ.words.length, tone: HZ.firstTone(py) };
+      HZ.words.push(e); HZ.wordByKey[key] = e;
+    });
+  };
+  HZ.isKey = k => typeof k === 'string' && k.startsWith('w:');
+  /** Запись по ключу SRS: иероглиф или слово */
+  HZ.entry = k => HZ.isKey(k) ? HZ.wordByKey[k] : HZ.byChar[k];
+
   /** Добавить провайдер подборок: fn() -> [{id,name,desc,group,chars}] */
   HZ.addCollectionProvider = fn => HZ.collectionProviders.push(fn);
 

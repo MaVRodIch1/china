@@ -173,3 +173,17 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
   .set-row { flex-direction: column; align-items: stretch; } .set-row .input { width: 100%; } #toasts { bottom: 90px; }
   .progress-wrap { flex-direction: column; align-items: flex-start; }
 }
+
+/* Слова и вкладки */
+.tabs { display: flex; gap: .4rem; margin: .4rem 0 1rem; border-bottom: 1px solid var(--line); }
+.tab { padding: .55rem 1rem; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.tab.on { color: var(--accent); border-color: var(--accent); }
+.filters.f3 { grid-template-columns: 2fr 1fr 1fr 1fr; margin-top: .8rem; }
+.word-list { display: grid; gap: .4rem; margin-top: .6rem; }
+.word-row { display: grid; grid-template-columns: minmax(70px, 120px) minmax(90px, 160px) 1fr auto; align-items: center; gap: .7rem; padding: .5rem .8rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.word-row:hover { box-shadow: var(--shadow); } .word-row.learn { background: var(--gold-soft); border-color: transparent; } .word-row.done { background: var(--ok-soft); border-color: transparent; }
+.word-row .w { font-size: 1.5rem; font-weight: 700; } .word-row .wm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip.sm { font-size: .7rem; padding: .05rem .5rem; }
+.big-char.word { padding: .15em .35em; }
+.stacked .learning { background: var(--gold); }
+@media (max-width: 800px) { .word-row { grid-template-columns: 1fr auto; } .word-row .wp { grid-column: 1; } .word-row .wm { grid-column: 1 / -1; white-space: normal; } .filters.f3 { grid-template-columns: 1fr 1fr; } .filters.f3 .input:first-child { grid-column: 1 / -1; } }

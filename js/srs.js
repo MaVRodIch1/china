@@ -140,9 +140,17 @@
 
   function counts() {
     let learned = 0, learning = 0;
-    for (const ch in cards()) { const c = cards()[ch]; if (isMastered(c)) learned++; else learning++; }
+    for (const ch in cards()) { if (HZ.isKey(ch)) continue; const c = cards()[ch]; if (isMastered(c)) learned++; else learning++; }
     return { learned, learning, fresh: HZ.chars.length - learned - learning, total: HZ.chars.length };
   }
+  function wordCounts() {
+    let learned = 0, learning = 0;
+    for (const k in cards()) { if (!HZ.isKey(k)) continue; const c = cards()[k]; if (isMastered(c)) learned++; else learning++; }
+    return { learned, learning, fresh: HZ.words.length - learned - learning, total: HZ.words.length };
+  }
+  const newWordBudget = () => Math.max(0, store.s.settings.newWordsPerDay - (store.today().neww || 0));
+  /** Новые слова: по уровню HSK и частоте (как в списке) */
+  function newWordList(limit = 9999) { return HZ.words.filter(w => isNew(w.key)).slice(0, limit).map(w => w.key); }
   const hardList = () => HZ.chars.map(c => c.ch).filter(isHard).sort((a, b) => difficulty(b) - difficulty(a));
 
   function forecast(days = 7) { // сколько карточек созреет в ближайшие дни
@@ -157,5 +165,5 @@
     return arr;
   }
 
-  HZ.srs = { GRADES, get, isNew, create, grade, label, record, markKnown, isHard, difficulty, accuracy, isMastered, dueList, newBudget, newList, counts, hardList, forecast, fmtDays, nextState };
+  HZ.srs = { GRADES, get, isNew, create, grade, label, record, markKnown, isHard, difficulty, accuracy, isMastered, dueList, newBudget, newList, counts, wordCounts, newWordBudget, newWordList, hardList, forecast, fmtDays, nextState };
 })();

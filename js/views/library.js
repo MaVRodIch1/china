@@ -46,9 +46,9 @@
     const q = h('input.input', { type: 'search', placeholder: 'Поиск: иероглиф, пиньинь, перевод, ключ…', value: filters.q });
     q.oninput = () => { filters.q = q.value; draw(); };
     ui.clear(view).append(h('div.page',
-      h('h1', 'Иероглифы'),
+      h('h1', 'Иероглифы'), HZ.libTabs('chars'),
       h('div.filters', q,
-        sel('hsk', [['', 'Все HSK'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3+']]),
+        sel('hsk', [['', 'Все HSK'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3'], ['4', 'Вне HSK']]),
         sel('theme', [['', 'Все темы'], ...Object.entries(HZ.themes)]),
         sel('state', [['', 'Любой статус'], ['new', 'Новые'], ['learn', 'Изучаются'], ['done', 'Выучены'], ['hard', 'Сложные']]),
         sel('sort', [['order', 'По порядку изучения'], ['strokes', 'По числу черт'], ['py', 'По пиньиню'], ['hard', 'По сложности']])),

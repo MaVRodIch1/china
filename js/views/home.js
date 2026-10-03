@@ -40,6 +40,7 @@
     const cnt = srs.counts();
     const due = srs.dueList().length, budget = srs.newBudget(), avail = Math.min(budget, srs.newList().length);
     const hard = srs.hardList().length;
+    const wc = srs.wordCounts(), wAvail = Math.min(srs.newWordBudget(), srs.newWordList().length);
     const li = HZ.gami.levelInfo(), st = HZ.gami.streakNow();
     const t = store.today();
     const quests = HZ.gami.questsToday();
@@ -82,6 +83,11 @@
             h('span.q-check', q.done ? '✓' : ''), h('div.q-main', h('span', q.text), h('div.progress.sm', h('i', { style: { width: Math.round(q.val / q.target * 100) + '%' } }))),
             h('small', q.done ? 'готово' : `${q.val}/${q.target} · +${q.xp} XP`)))))),
 
+      h('section.panel', h('h3', '📘 Слова HSK'),
+        h('div.row.between.wrap', h('div', h('b', wc.learned + wc.learning), ` из ${wc.total} начато · выучено ${wc.learned}`,
+          h('div.stacked.mt', h('i.done', { style: { flex: wc.learned } }), h('i.learning', { style: { flex: wc.learning } }), h('i.new', { style: { flex: wc.fresh } }))),
+          h('div.row.wrap', wAvail ? h('a.btn.primary', { href: '#/study/words' }, `Учить слова · ${wAvail}`) : h('span.muted', 'Лимит слов на сегодня выбран'), h('a.btn', { href: '#/words' }, 'Все слова')))),
+
       recs.length ? h('section.panel', h('h3', 'Рекомендации для вас'), h('ul.recs', recs.map(r => h('li', h('span.r-ico', r.ico), h('span.r-text', r.text),
         r.go ? h('a.btn.sm', { href: r.go }, r.btn) : h('button.btn.sm', { onclick: r.act }, r.btn))))) : null,
 
@@ -110,10 +116,16 @@
     const names = ['Сегодня', 'Завтра'];
     // уровни HSK
     const hskRows = [1, 2, 3].map(lv => {
-      const cs = HZ.chars.filter(c => lv === 3 ? c.h >= 3 : c.h === lv); if (!cs.length) return null;
+      const cs = HZ.chars.filter(c => c.h === lv); if (!cs.length) return null;
       const m = cs.filter(c => srs.isMastered(srs.get(c.ch))).length, s = cs.filter(c => srs.get(c.ch)).length;
-      return h('div.hsk-row', h('span', lv === 3 ? 'HSK 3+' : 'HSK ' + lv), h('div.stacked.sm', h('i.done', { style: { flex: m } }), h('i.learn', { style: { flex: s - m } }), h('i.new', { style: { flex: cs.length - s } })), h('small', `${m}/${cs.length}`));
+      return h('div.hsk-row', h('span', 'HSK ' + lv), h('div.stacked.sm', h('i.done', { style: { flex: m } }), h('i.learn', { style: { flex: s - m } }), h('i.new', { style: { flex: cs.length - s } })), h('small', `${m}/${cs.length}`));
     }).filter(Boolean);
+    // слова по уровням
+    const wRows = [1, 2, 3].map(lv => {
+      const ws = HZ.words.filter(w => w.h === lv);
+      const m = ws.filter(w => srs.isMastered(srs.get(w.key))).length, s = ws.filter(w => srs.get(w.key)).length;
+      return h('div.hsk-row', h('span', 'HSK ' + lv), h('div.stacked.sm', h('i.done', { style: { flex: m } }), h('i.learn', { style: { flex: s - m } }), h('i.new', { style: { flex: ws.length - s } })), h('small', `${m}/${ws.length}`));
+    });
     // тоны
     const toneRows = [1, 2, 3, 4].map(tn => {
       let ok = 0, bad = 0; HZ.chars.forEach(c => { const k = srs.get(c.ch); if (k && c.tone === tn) { ok += k.ok; bad += k.bad; } });
@@ -132,7 +144,7 @@
       h('section.panel', h('h3', 'Повторения за 14 дней'), h('svg.chart', { viewBox: `0 0 ${W} ${H}`, html: bars, role: 'img', 'aria-label': 'График повторений' }), h('p.muted.small', 'Яркие столбцы — верные ответы, бледные — все повторения.')),
       h('div.grid2',
         h('section.panel', h('h3', 'Прогноз повторений'), h('div.week', fc.map((v, i) => h('div.wday', h('b.small', v), h('i', { style: { height: Math.max(4, v / fmx * 44) + 'px' } }), h('small', i < 2 ? names[i] : HZ.addDays(new Date(), i).toLocaleDateString('ru-RU', { weekday: 'short' })))))),
-        h('section.panel', h('h3', 'По уровням HSK'), hskRows)),
+        h('section.panel', h('h3', 'Иероглифы по уровням HSK'), hskRows, h('h3.mt', 'Слова по уровням HSK'), wRows)),
       h('div.grid2',
         h('section.panel', h('h3', 'Точность по тонам'), toneRows, h('p.muted.small', 'Тон первого слога иероглифа.')),
         h('section.panel', h('h3', 'Хуже всего запоминаются'), hardTop.length ? h('div.mini-grid', hardTop.map(ch => h('a.mini', { href: '#/char/' + ch, title: HZ.byChar[ch].m }, ch))) : h('p.muted', 'Пока нет данных — отлично!'),
@@ -162,7 +174,8 @@
       h('section.panel',
         row('Тема', sel('theme', [['auto', 'Как в системе'], ['light', 'Светлая'], ['dark', 'Тёмная']], applyTheme)),
         row('Новых иероглифов в день', sel('newPerDay', [1, 2, 3, 5, 7, 10, 15, 20, 30].map(n => [n, String(n)])), 'Чем больше — тем больше повторений в ближайшие дни.'),
-        row('Откуда брать новые', sel('newSource', [['all', 'Все иероглифы по порядку'], ...cols.map(c => [c.id, c.name])])),
+        row('Новых слов в день', sel('newWordsPerDay', [0, 1, 2, 3, 5, 7, 10, 15, 20].map(n => [n, String(n)])), 'Слова учатся отдельно от иероглифов; 0 — не вводить новые слова.'),
+        row('Откуда брать новые иероглифы', sel('newSource', [['all', 'Все иероглифы по порядку'], ...cols.map(c => [c.id, c.name])])),
         row('Режим повторения', sel('reviewStyle', [['flip', 'Карточки: вспомнить и оценить'], ['choice', 'Выбор ответа (авто-оценка)']]), 'В режиме выбора оценка ставится автоматически по ответу и скорости.')),
       h('section.panel',
         row('Звуковые эффекты', toggle('sfx')),

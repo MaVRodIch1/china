@@ -45,19 +45,20 @@
   }
 
   const firstMean = m => m.split(/[;,]/)[0].trim();
+  const bigZh = e => h('div.big-char.xl', { lang: 'zh', style: e.isWord && e.s > 1 ? { fontSize: e.s >= 4 ? '3.2rem' : '4.6rem' } : null }, e.ch);
 
   function makeQuestion(e, type, pool) {
     let q;
     if (type === 'comp2zh' && e.comps.length < 2) type = 'zh2ru';
     if (type === 'zh2ru') {
       const ds = distractors(e, pool, c => c.m);
-      q = { prompt: h('div.big-char.xl', { lang: 'zh' }, e.ch), sub: 'Что это значит?', options: HZ.shuffle([e, ...ds]).map(c => ({ key: c.ch, label: c.m })) };
+      q = { prompt: bigZh(e), sub: 'Что это значит?', options: HZ.shuffle([e, ...ds]).map(c => ({ key: c.ch, label: c.m })) };
     } else if (type === 'ru2zh') {
       const ds = distractors(e, pool, c => c.ch);
       q = { prompt: h('div.q-text', e.m), sub: 'Выберите иероглиф', big: true, options: HZ.shuffle([e, ...ds]).map(c => ({ key: c.ch, label: c.ch })) };
     } else if (type === 'zh2py') {
       const ds = pinyinDistractors(e, pool);
-      q = { prompt: h('div.big-char.xl', { lang: 'zh' }, e.ch), sub: 'Как читается? (обратите внимание на тон)', options: HZ.shuffle([e, ...ds]).map(c => ({ key: c.ch, label: c.py })) };
+      q = { prompt: bigZh(e), sub: 'Как читается? (обратите внимание на тон)', options: HZ.shuffle([e, ...ds]).map(c => ({ key: c.ch, label: c.py })) };
     } else if (type === 'audio2zh') {
       const ds = distractors(e, pool, c => c.ch);
       q = { prompt: h('button.btn.lg.audio-prompt', { type: 'button', onclick: () => ui.speak(e.ch) }, '🔊 Послушать'), sub: 'Какой иероглиф вы слышите?', big: true, audio: e.ch,
@@ -103,7 +104,7 @@
       if (idx >= total || (opts.lives && wrong >= opts.lives)) return finish();
       const e = order[idx % order.length];
       const type = opts.types[HZ.rand(opts.types.length)];
-      const q = makeQuestion(e, type, all);
+      const q = makeQuestion(e, type, e.isWord ? HZ.words : all);
       locked = false; qStart = Date.now();
       drawHud();
       ui.clear(body);
@@ -120,15 +121,15 @@
       if (locked) return; locked = true;
       const ok = o.key === q.answer;
       body.querySelectorAll('.opt').forEach(b => { b.disabled = true; if (b.dataset.k === q.answer) b.classList.add('right'); });
-      srs.record(e.ch, ok);
-      results.push({ ch: e.ch, ok });
+      srs.record(e.key || e.ch, ok);
+      results.push({ ch: e.key || e.ch, ok });
       if (ok) {
         btn.classList.add('pulse');
         right++; combo++; bestCombo = Math.max(bestCombo, combo);
         score += opts.kind === 'speed' ? 1 + Math.floor(combo / 5) : 10 + Math.min(combo, 10);
         ui.sfx('ok');
       } else {
-        btn.classList.add('wrong'); wrong++; combo = 0; mistakes.add(e.ch); ui.sfx('bad');
+        btn.classList.add('wrong'); wrong++; combo = 0; mistakes.add(e.key || e.ch); ui.sfx('bad');
       }
       drawHud();
       const delay = ok ? (opts.kind === 'speed' ? 280 : 650) : (opts.kind === 'speed' ? 800 : 1500);
@@ -172,7 +173,7 @@
           h('div.stat', h('b', bestCombo), h('span', 'лучшая серия')),
           h('div.stat', h('b', '+' + xp), h('span', 'XP'))),
         opts.kind === 'speed' && store.s.best.speed ? h('p.muted', 'Ваш рекорд: ' + store.s.best.speed) : null,
-        mistakes.size ? h('div.cd-sec', h('h4', 'Над чем поработать'), h('div.mini-grid', [...mistakes].map(ch => h('a.mini', { href: '#/char/' + ch }, ch)))) : null,
+        mistakes.size ? h('div.cd-sec', h('h4', 'Над чем поработать'), h('div.mini-grid', [...mistakes].map(k => h('a.mini', { href: HZ.isKey(k) ? '#/word/' + encodeURIComponent(k.slice(2)) : '#/char/' + k }, HZ.isKey(k) ? k.slice(2) : k)))) : null,
         h('div.actions', h('button.btn.primary.lg', { onclick: () => runQuiz(opts) }, 'Играть ещё'), h('a.btn', { href: '#/games' }, 'К играм'))));
     }
 
@@ -223,10 +224,10 @@
           const items = [sel.z.b, sel.p.b, sel.m.b];
           if (ok) {
             items.forEach(x => { x.classList.remove('sel'); x.classList.add('right'); x.disabled = true; });
-            srs.record(sel.z.e.ch, true); matched++; left--; ui.sfx('ok');
+            srs.record(sel.z.e.key || sel.z.e.ch, true); matched++; left--; ui.sfx('ok');
             if (!left) setTimeout(() => { round++; nextRound(); }, 500);
           } else {
-            mistakes++; [sel.z.e, sel.p.e, sel.m.e].forEach(x => bad.add(x.ch)); srs.record(sel.z.e.ch, false);
+            mistakes++; [sel.z.e, sel.p.e, sel.m.e].forEach(x => bad.add(x.key || x.ch)); srs.record(sel.z.e.key || sel.z.e.ch, false);
             items.forEach(x => { x.classList.add('wrong'); });
             ui.sfx('bad');
             setTimeout(() => items.forEach(x => x.classList.remove('wrong', 'sel')), 450);
@@ -243,7 +244,7 @@
       ui.confetti(80); store.save();
       ui.clear(area).append(h('div.summary', h('div.big', mistakes === 0 ? '🏆' : '🎯'), h('h2', 'Все пары собраны!'),
         h('div.stat-row', h('div.stat', h('b', secs + ' с'), h('span', 'время')), h('div.stat', h('b', mistakes), h('span', 'ошибок')), h('div.stat', h('b', '+' + xp), h('span', 'XP'))),
-        bad.size ? h('div.cd-sec', h('h4', 'Путались'), h('div.mini-grid', [...bad].map(ch => h('a.mini', { href: '#/char/' + ch }, ch)))) : null,
+        bad.size ? h('div.cd-sec', h('h4', 'Путались'), h('div.mini-grid', [...bad].map(k => h('a.mini', { href: HZ.isKey(k) ? '#/word/' + encodeURIComponent(k.slice(2)) : '#/char/' + k }, HZ.isKey(k) ? k.slice(2) : k)))) : null,
         h('div.actions', h('button.btn.primary.lg', { onclick: () => runMatch(poolE) }, 'Ещё раз'), h('a.btn', { href: '#/games' }, 'К играм'))));
     }
     nextRound();
@@ -271,6 +272,8 @@
   /* ====== Хаб игр ====== */
   const learnedPool = () => { const l = HZ.chars.filter(c => srs.get(c.ch)); return l.length >= 6 ? l : HZ.chars; };
 
+  const wordPool = () => { const l = HZ.words.filter(w => srs.get(w.key)); return l.length >= 8 ? l : HZ.words.slice(0, 80); };
+
   function hub() {
     const view = document.getElementById('view');
     const hard = srs.hardList().map(ch => HZ.byChar[ch]);
@@ -280,6 +283,8 @@
       { ico: '🔗', name: 'Сопоставление', desc: 'Иероглиф · пиньинь · перевод — собери тройки', go: () => runMatch(learnedPool()) },
       { ico: '👂', name: 'Аудирование', desc: 'Услышьте слово и найдите иероглиф', go: () => runQuiz({ title: 'Аудирование', types: ['audio2zh'], pool: learnedPool(), count: 10, kind: 'quiz' }) },
       { ico: '🧩', name: 'Из чего состоит?', desc: 'По частям соберите иероглиф', go: () => runQuiz({ title: 'Из чего состоит?', types: ['comp2zh'], pool: HZ.chars.filter(c => c.comps.length >= 2), count: 10, kind: 'quiz', lives: 3 }) },
+      { ico: '📘', name: 'Слова: викторина', desc: 'Значение, пиньинь и слово — по словам HSK', go: () => runQuiz({ title: 'Слова', types: ['zh2ru', 'ru2zh', 'zh2py'], pool: wordPool(), count: 10, kind: 'quiz' }) },
+      { ico: '🔗', name: 'Слова: сопоставление', desc: 'Слово · пиньинь · перевод', go: () => runMatch(wordPool()) },
       { ico: '🎯', name: 'Тренировка сложных', desc: hard.length >= 4 ? `${hard.length} иероглифов, которые вы забываете` : 'Появится, когда накопятся ошибки (нужно от 4)', disabled: hard.length < 4, go: () => runQuiz({ title: 'Сложные', types: ['zh2ru', 'ru2zh', 'zh2py', 'comp2zh'], pool: hard, count: Math.min(12, hard.length * 2), kind: 'quiz' }) },
       { ico: '🎓', name: 'Тест уровня', desc: 'Отметьте уже известные иероглифы и подберите темп', go: placement }
     ];

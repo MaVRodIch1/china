@@ -125,7 +125,7 @@
     { id: 'hsk1', ico: '🏅', name: 'HSK 1 покорён', desc: 'Начать изучать все иероглифы HSK 1 из набора', ok: c => c.hsk1 }
   ];
   function ctx() {
-    const cs = store.s.cards, all = Object.values(cs);
+    const cs = {}; Object.keys(store.s.cards).forEach(k => { if (!HZ.isKey(k)) cs[k] = store.s.cards[k]; }); const all = Object.values(cs);
     const hsk1 = HZ.chars.filter(x => x.h === 1);
     let reviews = 0; Object.values(store.s.log).forEach(l => { reviews += l.rev; });
     let games = 0; Object.values(store.s.log).forEach(l => { games += l.games; });

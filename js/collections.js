@@ -25,8 +25,8 @@
   function builtin() {
     const out = [], all = HZ.chars;
     // HSK
-    [[1, 'HSK 1', 'Базовый уровень: самые нужные иероглифы'], [2, 'HSK 2', 'Элементарный уровень'], [3, 'HSK 3 и выше', 'Расширение: менее частотные знаки']].forEach(([lv, name, desc]) => {
-      const cs = all.filter(c => lv === 3 ? c.h >= 3 : c.h === lv).map(c => c.ch);
+    [[1, 'HSK 1', 'Базовый уровень: самые нужные иероглифы'], [2, 'HSK 2', 'Элементарный уровень'], [3, 'HSK 3', 'Средний уровень'], [4, 'Вне HSK 1–3', 'Базовые элементы, нужные для разбора других знаков']].forEach(([lv, name, desc]) => {
+      const cs = all.filter(c => c.h === lv).map(c => c.ch);
       if (cs.length) out.push({ id: 'hsk' + lv, name, desc: desc + ' (стандарт HSK 2.0)', group: 'HSK', ico: '🏮', chars: cs });
     });
     // Темы
@@ -48,7 +48,7 @@
     // Ключи (≥3 иероглифа с одним ключом)
     const byRad = {};
     all.forEach(c => (byRad[c.r] = byRad[c.r] || []).push(c.ch));
-    Object.keys(byRad).filter(r => byRad[r].length >= 3).sort((a, b) => byRad[b].length - byRad[a].length).forEach(r =>
+    Object.keys(byRad).filter(r => byRad[r].length >= 6).sort((a, b) => byRad[b].length - byRad[a].length).forEach(r =>
       out.push({ id: 'rad-' + r, name: `Ключ ${r} — ${HZ.radicals[r] || ''}`.trim(), desc: 'Иероглифы с одним ключом', group: 'Ключи', ico: '🔑', chars: byRad[r] }));
     // Похожие
     SIMILAR.forEach((g, i) => {
