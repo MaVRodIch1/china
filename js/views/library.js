@@ -48,7 +48,7 @@
     ui.clear(view).append(h('div.page',
       h('h1', 'Иероглифы'), HZ.libTabs('chars'),
       h('div.filters', q,
-        sel('hsk', [['', 'Все HSK'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3'], ['4', 'Вне HSK']]),
+        sel('hsk', [['', 'Все HSK'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3'], ['4', 'HSK 4'], ['5', 'Вне HSK']]),
         sel('theme', [['', 'Все темы'], ...Object.entries(HZ.themes)]),
         sel('state', [['', 'Любой статус'], ['new', 'Новые'], ['learn', 'Изучаются'], ['done', 'Выучены'], ['hard', 'Сложные']]),
         sel('sort', [['order', 'По порядку изучения'], ['strokes', 'По числу черт'], ['py', 'По пиньиню'], ['hard', 'По сложности']])),

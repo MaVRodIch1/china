@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Сборка текстов для чтения: tools/content/texts.txt -> js/data/texts.js (пиньинь считается pypinyin).
+"""Сборка текстов для чтения: tools/content/texts.txt и texts4.txt -> js/data/texts.js (пиньинь считается pypinyin).
 Запуск: python3 tools/build_texts.py [--show]  (--show печатает пиньинь для проверки)"""
 import re, os, sys, json
 from pypinyin import pinyin, Style
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 PUNCT = {'，': ',', '。': '.', '！': '!', '？': '?', '、': ',', '；': ';', '：': ':', '…': '…'}
-NAMES = r'中国|北京|西安|上海|小明|小花|小黑|汉语|汉字'
+NAMES = r'中国|北京|西安|上海|小明|小花|小黑|小王|小李|汉语|汉字'
 def tone(s):
     for t, m in enumerate(['āēīōūǖ', 'áéíóúǘ', 'ǎěǐǒǔǚ', 'àèìòùǜ'], 1):
         if any(c in s for c in m): return t
@@ -25,6 +25,7 @@ def syl(text):
         if c == '都' and out[i] != 'dōu': out[i] = 'dōu'
     for m in re.finditer(r'(慢慢|认真)地', text): out[m.end() - 1] = 'de'
     for m in re.finditer(r'睡很多觉', text): out[m.end() - 1] = 'jiào'
+    for m in re.finditer(r'(?<=[点这那哪画会块边玩])儿', text): out[m.start()] = 'r'  # эризация: yìdiǎnr, zhèr
     for m in re.finditer(NAMES, text):
         out[m.start()] = out[m.start()][0].upper() + out[m.start()][1:]
     res = ''
@@ -46,7 +47,8 @@ def flush_para():
     global para
     if cur is not None and para: cur['paras'].append(para)
     para = []
-for l in open(os.path.join(ROOT, 'tools/content/texts.txt'), encoding='utf-8'):
+lines = [l for f in ('texts.txt', 'texts4.txt') if os.path.exists(os.path.join(ROOT, 'tools/content', f)) for l in open(os.path.join(ROOT, 'tools/content', f), encoding='utf-8')]
+for l in lines:
     l = l.rstrip('\n')
     if l.startswith('#') : continue
     if l.startswith('==='):
@@ -76,6 +78,6 @@ for t in texts:
         han = len([c for c in z if '一' <= c <= '鿿'])
         n = len(re.findall(r'[a-zA-Züāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]+', py))
         assert han == n, (t['id'], z, py)
-js = '/* Тексты для чтения (HSK 3.0, уровни 1–3). Сгенерировано tools/build_texts.py из tools/content/texts.txt. */\nHZ.addTexts(' + json.dumps(texts, ensure_ascii=False, indent=1) + ');\n'
+js = '/* Тексты для чтения (HSK 3.0, уровни 1–4). Сгенерировано tools/build_texts.py из tools/content/texts*.txt. */\nHZ.addTexts(' + json.dumps(texts, ensure_ascii=False, indent=1) + ');\n'
 open(os.path.join(ROOT, 'js/data/texts.js'), 'w', encoding='utf-8').write(js)
 print(len(texts), 'texts', sum(len(p) for t in texts for p in t['paras']), 'paragraphs', len(js) // 1024, 'KB')

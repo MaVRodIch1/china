@@ -53,7 +53,7 @@
     const fresh = srs.newWordList().length;
     ui.clear(view).append(h('div.page', h('h1', 'Слова'), tabs('words'),
       h('div.row.wrap', h('a.btn.primary', { href: '#/study/words' }, `▶ Учить слова · ${Math.min(fresh, srs.newWordBudget())}`), h('span.muted.small', `Лимит новых слов в день: ${store.s.settings.newWordsPerDay} (в настройках)`)),
-      h('div.filters.f3', q, sel('hsk', [['', 'Все HSK'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3'], ['0', 'Мои слова']]),
+      h('div.filters.f3', q, sel('hsk', [['', 'Все HSK'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3'], ['4', 'HSK 4'], ['0', 'Мои слова']]),
         sel('state', [['', 'Любой статус'], ['new', 'Новые'], ['learn', 'Изучаются'], ['done', 'Выучены']]),
         sel('pos', [['', 'Любая часть речи'], ...Object.entries(POS).filter(([k]) => !['y', 'e'].includes(k))])),
       count, box));

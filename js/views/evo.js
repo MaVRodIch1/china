@@ -75,7 +75,7 @@
     const gc = HZ.games && HZ.games.gameCol && HZ.games.gameCol();
     if (gc) out.unshift({ id: 'game', name: 'Как в играх: ' + gc.name, group: 'Мои', ico: '🎯', n: gc.chars.length });
     HZ.collections.all().forEach(c => { const n = c.chars.length + (c.words || []).length; if (n >= 4) out.push({ id: 'c:' + c.id, name: c.name, group: c.group || 'Мои подборки', ico: c.ico || '🗂️', n }); });
-    [1, 2, 3].forEach(l => out.push({ id: 'w' + l, name: 'Слова HSK ' + l, group: 'Слова', ico: '📘', n: HZ.words.filter(w => w.h === l).length }));
+    [1, 2, 3, 4].forEach(l => out.push({ id: 'w' + l, name: 'Слова HSK ' + l, group: 'Слова', ico: '📘', n: HZ.words.filter(w => w.h === l).length }));
     out.push({ id: 'wlearned', name: 'Мои изучаемые слова', group: 'Слова', ico: '📖' });
     return out;
   }
@@ -84,7 +84,7 @@
     if (id === 'game') { const gc = HZ.games.gameCol(); p = gc ? HZ.games.colEntries(gc) : null; }
     else if (id === 'learned') p = HZ.chars.filter(c => srs.get(c.ch));
     else if (id === 'wlearned') p = HZ.words.filter(w => srs.get(w.key));
-    else if (/^w[123]$/.test(id)) p = HZ.words.filter(w => w.h === +id[1]);
+    else if (/^w[1-4]$/.test(id)) p = HZ.words.filter(w => w.h === +id[1]);
     else if (id.startsWith('c:')) { const c = HZ.collections.get(id.slice(2)); p = c ? HZ.games.colEntries(c) : []; }
     if (!p || p.length < 4) return null;
     return p;

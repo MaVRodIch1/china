@@ -1,10 +1,10 @@
-// Проверка текстов для чтения: все иероглифы должны быть не выше уровня текста. Запуск: node tools/check_texts.js
+// Проверка текстов для чтения: все иероглифы должны быть не выше уровня текста. Запуск: node tools/check_texts.js [файл…]
 const fs = require('fs'), path = require('path');
 global.window = global;
 const R = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 new Function('window', ['js/core.js', 'js/data/hsk-starter.js', 'js/data/hsk3-chars.js', 'js/data/hsk-words.js'].map(R).join('\n;'))(global);
 const HZ = window.HZ;
-const txt = R('tools/content/texts.txt').split('\n');
+const txt = (process.argv.slice(2).length ? process.argv.slice(2) : ['tools/content/texts.txt', 'tools/content/texts4.txt'].filter(f => fs.existsSync(path.join(__dirname, '..', f)))).map(R).join('\n').split('\n');
 let cur = null, bad = 0, nt = 0, ns = 0;
 const HAN = /[一-鿿]/;
 for (const [i, l] of txt.entries()) {

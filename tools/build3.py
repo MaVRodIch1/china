@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Сборка данных HSK 3.0 (уровни 1–3): js/data/hsk3-chars.js, js/data/hsk-words.js, обновление уровней в hsk-starter.js.
+"""Сборка данных HSK 3.0 (уровни 1–4): js/data/hsk3-chars.js, js/data/hsk-words.js, обновление уровней в hsk-starter.js.
 Вход: tools/cache/draft3.json (HSK 3.0), tools/cache/draft.json (старый список — только для уже существующих иероглифов),
 русские тексты в tools/content/. Запуск: HSK_STD=new python3 tools/prep.py && HSK_STD=old python3 tools/prep.py && python3 tools/build3.py"""
 import json, re, os, sys, glob
@@ -39,7 +39,8 @@ def load_rows(pattern):
             if len(a) == 7: out[a[0]] = a
     return out
 rows_old = load_rows('tools/content/ru_chars_*.txt')   # 492 иероглифа первой версии
-rows_new = load_rows('tools/content/ru3_chars_*.txt')  # 324 новых
+rows_new = load_rows('tools/content/ru3_chars_*.txt')  # 324 новых (HSK 3.0, уровни 1–3)
+rows_new.update(load_rows('tools/content/ru4_chars_*.txt'))  # 269 новых (HSK 3.0, уровень 4)
 
 PUNCT = {'，': ',', '。': '.', '！': '!', '？': '?', '、': ',', '；': ';', '：': ':', '…': '…'}
 def tone(s):
@@ -81,7 +82,7 @@ def words_str(c):
 # ---------- иероглифы ----------
 RADNORM = {'⺼': '月', '⺮': '竹', '⺀': '冫', '⺌': '小', '⺈': '刀', '氺': '水'}
 lvl3 = {c: e['lv'] for c, e in D3['chars'].items()}
-PYFIX = {'得': 'de', '着': 'zhe', '长': 'cháng', '便': 'biàn', '地': 'dì', '了': 'le', '还': 'hái', '思': 'sī', '宜': 'yí'}
+PYFIX = {'得': 'de', '着': 'zhe', '长': 'cháng', '便': 'biàn', '地': 'dì', '了': 'le', '还': 'hái', '思': 'sī', '宜': 'yí', '切': 'qiē'}
 def comps_str(c, e):
     ety = e.get('ety') or {}
     out = []
@@ -99,7 +100,8 @@ def q(s): return "'" + str(s).replace('\\', '\\\\').replace("'", "\\'") + "'"
 allchars = {}
 for c, r in rows_old.items(): allchars[c] = (D2['chars'].get(c) or D3['chars'][c], r)
 for c, r in rows_new.items(): allchars[c] = (D3['chars'][c], r)
-def lv_of(c): return lvl3.get(c, 4)
+OUT = max(lvl3.values()) + 1  # уровень «вне списка HSK 3.0»
+def lv_of(c): return lvl3.get(c, OUT)
 order = sorted(allchars, key=lambda c: (lv_of(c), (D3['chars'].get(c) or D2['chars'][c])['fr']))
 rad_used = {}; lines = []
 for c in order:
@@ -110,8 +112,8 @@ for c in order:
     lines.append('    [' + ','.join([q(c), q(py), q(r[1]), str(e['strokes']), q(rad), str(lv_of(c)), q(r[2]), q(comps_str(c, e)), q(r[3]), q(r[4]), q(words_str(c)), q(sent)]) + ']')
 rad_js = ','.join(f"{q(k)}:{q(v)}" for k, v in rad_used.items() if v)
 open(P('js/data/hsk3-chars.js'), 'w', encoding='utf-8').write(
-    "/* Иероглифы HSK 3.0 (уровни 1–3), добавленные к стартовому набору. Сгенерировано tools/build3.py.\n"
-    " * Уровни — по первому слову HSK 3.0 с иероглифом; 4 — вне списка. Источники: complete-hsk-vocabulary, Make Me a Hanzi; русские тексты — tools/content. */\n"
+    f"/* Иероглифы HSK 3.0 (уровни 1–{OUT - 1}), добавленные к стартовому набору. Сгенерировано tools/build3.py.\n"
+    f" * Уровни — по первому слову HSK 3.0 с иероглифом; {OUT} — вне списка. Источники: complete-hsk-vocabulary, Make Me a Hanzi; русские тексты — tools/content. */\n"
     "HZ.addPack({\n  id: 'hsk3',\n  name: 'HSK 3.0',\n  radicals: {" + rad_js + "},\n  rows: [\n" + ',\n'.join(lines) + "\n  ]\n});\n")
 
 # ---------- слова ----------
@@ -120,7 +122,7 @@ for w in words:
     z, r = sents[w['w']]
     wl.append('  [' + ','.join([q(w['w']), q(w['py']), q(ru_words[w['w']]), str(w['lv']), q(','.join(w['pos'][:2])), q(f"{z}|{syl(z)}|{r}")]) + ']')
 open(P('js/data/hsk-words.js'), 'w', encoding='utf-8').write(
-    "/* Слова HSK 3.0, уровни 1–3 (2209 слов). Формат: [слово, пиньинь, перевод, уровень, части речи, предложение]. Сгенерировано tools/build3.py. */\n"
+    f"/* Слова HSK 3.0, уровни 1–{OUT - 1} ({len(words)} слов). Формат: [слово, пиньинь, перевод, уровень, части речи, предложение]. Сгенерировано tools/build3.py. */\n"
     "HZ.addWords([\n" + ',\n'.join(wl) + "\n]);\n")
 
 # ---------- уровни стартовых иероглифов ----------
@@ -128,4 +130,4 @@ pat = re.compile(r"^(    \['(.)','[^']*','[^']*',\d+,'[^']*',)(\d+),", re.M)
 starter2 = pat.sub(lambda m: f"{m.group(1)}{lv_of(m.group(2))},", starter)
 open(starter_path, 'w', encoding='utf-8').write(starter2)
 print(len(order), 'иероглифов в hsk3-chars;', len(words), 'слов;', sum(1 for c in order if not words_str(c)), 'иероглифов без слов')
-print('уровни:', {l: sum(1 for c in starter_chars + order if lv_of(c) == l) for l in (1, 2, 3, 4)})
+print('уровни:', {l: sum(1 for c in starter_chars + order if lv_of(c) == l) for l in range(1, OUT + 1)})

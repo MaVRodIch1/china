@@ -26,7 +26,7 @@
       const e = HZ.wordByKey['w:' + w] || HZ.byChar[w] || null;
       let py = syl.slice(k, k + n).map(s => s.replace(/[^A-Za-züāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, '')).join('');
       if (e && e.py && e.py.replace(/[\s']/g, '').toLowerCase() === py.toLowerCase()) py = e.py.replace(/\s/g, ''); // регистр как в словаре
-      tokens.push({ w, py, pre, suf: '', e, lvl: e ? Math.min(e.h || 3, 4) : 3 });
+      tokens.push({ w, py, pre, suf: '', e, lvl: e ? Math.min(e.h || 3, HZ.HSK_MAX + 1) : 3 });
       pre = ''; i += n; k += n;
     }
     const lvl = Math.max(...tokens.map(t => t.lvl));
@@ -41,7 +41,7 @@
     return BANK;
   }
   const text = s => s.tokens.map(t => t.pre + t.w + t.suf).join('');
-  const LV = { '1': 'HSK 1', '2': 'HSK 1–2', '3': 'HSK 1–3', mine: 'Мои слова' };
+  const LV = { '1': 'HSK 1', '2': 'HSK 1–2', '3': 'HSK 1–3', '4': 'HSK 1–4', mine: 'Мои слова' };
   function sentPool(minTok = 1, maxTok = 99) {
     const lv = store.s.settings.sentLvl || '1';
     let list = bank().filter(s => s.tokens.length >= minTok && s.tokens.length <= maxTok);

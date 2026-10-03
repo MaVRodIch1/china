@@ -53,7 +53,7 @@
         h('div.cd-mean', e.m),
         h('div.chips',
           h('span.chip.' + st.cls, st.t),
-          e.h ? h('span.chip', 'HSK ' + e.h) : null,
+          e.h ? h('span.chip', HZ.lvName(e.h)) : null,
           h('span.chip', e.s + ' ' + HZ.plural(e.s, 'черта', 'черты', 'черт')),
           h('a.chip.link', { href: '#/collection/rad-' + e.r, title: 'Все иероглифы с этим ключом' }, `Ключ ${e.r} · ${HZ.radicals[e.r] || ''}`)))));
 

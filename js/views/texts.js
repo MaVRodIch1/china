@@ -41,7 +41,7 @@
     const draw = () => {
       ui.clear(box);
       const items = HZ.texts.filter(t => !lvFilter || String(t.lvl) === lvFilter);
-      [1, 2, 3].forEach(lv => {
+      [1, 2, 3, 4].forEach(lv => {
         const ts = items.filter(t => t.lvl === lv);
         if (!ts.length) return;
         box.append(h('h3.text-lv', `HSK ${lv}`, h('span.muted.small', ` · ${ts.length} ${HZ.plural(ts.length, 'текст', 'текста', 'текстов')}`)),
@@ -55,7 +55,7 @@
       });
     };
     const sel = h('select.input', { onchange: () => { lvFilter = sel.value; draw(); } },
-      [['', 'Все уровни'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3']].map(([v, l]) => h('option', { value: v }, l)));
+      [['', 'Все уровни'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3'], ['4', 'HSK 4']].map(([v, l]) => h('option', { value: v }, l)));
     sel.value = lvFilter;
     const done = Object.values(store.s.texts || {}).filter(x => x.done).length;
     ui.clear(view).append(h('div.page', h('h1', 'Чтение'), HZ.libTabs('texts'),
@@ -113,7 +113,7 @@
       if (charView) { // карточка отдельного иероглифа
         const c = HZ.byChar[charView];
         content = c ? h('div',
-          h('div.rd-py', ui.py(c.py, 'lg'), h('span.chip.sm', 'HSK ' + (c.h > 3 ? '—' : c.h))),
+          h('div.rd-py', ui.py(c.py, 'lg'), h('span.chip.sm', HZ.lvName(c.h))),
           h('div.rd-m', c.m),
           c.comps && c.comps.length ? h('div.muted.small', 'Состав: ' + c.comps.map(x => x.g + ' — ' + x.t).join('; ')) : null,
           c.mn ? h('div.rd-mn', '💡 ' + c.mn) : null,
@@ -122,7 +122,7 @@
       } else if (e) {
         const wordChars = [...tk.w].filter(c => HAN.test(c));
         content = h('div',
-          h('div.rd-py', ui.py(e.py || tk.py, 'lg'), e.pos && e.pos.length ? h('span.chip.sm', e.pos[0]) : null, h('span.chip.sm', 'HSK ' + (e.h > 3 ? '—' : e.h))),
+          h('div.rd-py', ui.py(e.py || tk.py, 'lg'), e.pos && e.pos.length ? h('span.chip.sm', e.pos[0]) : null, e.h ? h('span.chip.sm', HZ.lvName(e.h)) : h('span.chip.sm.new', 'моё')),
           h('div.rd-m', firstGloss(e.m) || e.m),
           e.m && e.m.includes(';') ? h('div.muted.small', e.m) : null,
           wordChars.length > 1 || e.isWord ? h('div.rd-chars', wordChars.map(c => { const ce = HZ.byChar[c]; return h('button.rd-char', { type: 'button', onclick: () => openSheet(tk, c) }, h('span.zh', c), h('small', ce ? ce.py : ''), h('small.muted', ce ? firstGloss(ce.m) : '')); })) : null,

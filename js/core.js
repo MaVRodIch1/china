@@ -148,6 +148,8 @@
   HZ.startOfDay = (d = new Date()) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
   HZ.endOfDay = (d = new Date()) => { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; };
   HZ.addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  HZ.HSK_MAX = 4; // HSK 3.0, уровни 1–4; 5 — вне списка
+  HZ.lvName = h => h > HZ.HSK_MAX ? 'вне HSK' : 'HSK ' + h;
   HZ.plural = (n, a, b, c) => { const m = Math.abs(n) % 100, k = m % 10; if (m > 10 && m < 20) return c; if (k > 1 && k < 5) return b; if (k === 1) return a; return c; };
   HZ.hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
 })();
