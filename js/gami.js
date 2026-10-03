@@ -122,6 +122,9 @@
     { id: 'col', ico: '🗂️', name: 'Коллекционер', desc: 'Создать свою подборку', ok: c => store.s.collections.length >= 1 },
     { id: 'lv5', ico: '⭐', name: 'Уровень 5', desc: 'Достичь 5 уровня', ok: c => c.level >= 5 },
     { id: 'lv10', ico: '🌟', name: 'Уровень 10', desc: 'Достичь 10 уровня', ok: c => c.level >= 10 },
+    { id: 'evo5', ico: '🧬', name: 'Эволюционист', desc: 'Открыть 5-й вид в «Эволюции»', ok: c => !!c.flags.evo5 },
+    { id: 'evo100', ico: '🐸', name: 'Из грязи в князи', desc: '100 верных ответов в «Эволюции»', ok: c => c.evoRight >= 100 },
+    { id: 'evoMax', ico: '👑', name: 'Владыка вселенной', desc: 'Вырастить «Вселенную» — 20-й вид в «Эволюции»', ok: c => !!c.flags.evoMax },
     { id: 'hsk1', ico: '🏅', name: 'HSK 1 покорён', desc: 'Начать изучать все иероглифы HSK 1 из набора', ok: c => c.hsk1 }
   ];
   function ctx() {
@@ -133,7 +136,7 @@
       started: all.length, mastered: all.filter(HZ.srs.isMastered).length, reviews, games,
       bestStreak: store.s.streak.best, level: levelOf(store.s.xp),
       notes: Object.values(store.s.notes).filter(n => n.assoc && n.assoc.trim()).length,
-      flags: store.s.flags || {},
+      flags: store.s.flags || {}, evoRight: (store.s.evo && store.s.evo.right) || 0,
       hsk1: hsk1.length > 0 && hsk1.every(x => cs[x.ch])
     };
   }

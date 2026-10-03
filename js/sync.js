@@ -44,6 +44,7 @@
     out.best = Object.assign({}, b.best);
     Object.keys(a.best || {}).forEach(k => { out.best[k] = Math.max(a.best[k] || 0, (b.best || {})[k] || 0); });
     out.flags = Object.assign({}, b.flags, a.flags);
+    if (b.evo && (!a.evo || (b.evo.upd || 0) > (a.evo.upd || 0))) out.evo = b.evo; // игра «Эволюция»: побеждает более свежее состояние
     return out;
   }
 

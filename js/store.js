@@ -16,7 +16,8 @@
     streak: { count: 0, best: 0, last: null },
     log: {},           // YYYY-MM-DD -> {rev, ok, newc, xp, games}
     quests: {},        // {date, done:{id:true}}
-    best: {}           // рекорды игр
+    best: {},          // рекорды игр
+    evo: null          // состояние игры «Эволюция»
   });
 
   let state;

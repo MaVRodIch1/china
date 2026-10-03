@@ -278,6 +278,7 @@
     const view = document.getElementById('view');
     const hard = srs.hardList().map(ch => HZ.byChar[ch]);
     const games = [
+      { ico: '🧬', name: 'Эволюция', desc: 'Idle-игра: отвечай, призывай существ и сливай их. Учит иероглифы из выбранной подборки', go: () => HZ.router.go('#/evo') },
       { ico: '❓', name: 'Викторина', desc: '10 вопросов: значение, пиньинь, иероглиф', go: () => runQuiz({ title: 'Викторина', types: ['zh2ru', 'ru2zh', 'zh2py', 'comp2zh'], pool: learnedPool(), count: 10, kind: 'quiz' }) },
       { ico: '⚡', name: 'Скорость', desc: '60 секунд: сколько иероглифов узнаете? Рекорд: ' + (store.s.best.speed || 0), go: () => runQuiz({ title: 'Скорость', types: ['zh2ru', 'zh2py'], pool: learnedPool(), time: 60, count: 9999, kind: 'speed' }) },
       { ico: '🔗', name: 'Сопоставление', desc: 'Иероглиф · пиньинь · перевод — собери тройки', go: () => runMatch(learnedPool()) },

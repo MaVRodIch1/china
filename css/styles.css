@@ -187,3 +187,36 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .big-char.word { padding: .15em .35em; }
 .stacked .learning { background: var(--gold); }
 @media (max-width: 800px) { .word-row { grid-template-columns: 1fr auto; } .word-row .wp { grid-column: 1; } .word-row .wm { grid-column: 1 / -1; white-space: normal; } .filters.f3 { grid-template-columns: 1fr 1fr; } .filters.f3 .input:first-child { grid-column: 1 / -1; } }
+
+/* Игра «Эволюция» */
+.evo { max-width: 560px; }
+.evo-top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.evo-coin-row { display: flex; align-items: center; gap: .5rem; } .evo-coin { font-size: 1.6rem; } .evo-coins { font-size: 2rem; line-height: 1; }
+.evo-src { margin: .5rem 0; display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.evo-board { display: grid; gap: .5rem; padding: .6rem; background: linear-gradient(160deg, var(--ok-soft), var(--gold-soft)); border-radius: 20px; user-select: none; -webkit-user-select: none; }
+.evo-cell { aspect-ratio: 1; border-radius: 14px; background: rgba(255, 255, 255, .45); border: 2px dashed var(--line); display: grid; place-items: stretch; position: relative; }
+:root[data-theme="dark"] .evo-cell { background: rgba(0, 0, 0, .18); }
+.evo-cell:not(.empty) { border-style: solid; border-color: transparent; background: transparent; }
+.evo-tile { position: relative; display: grid; place-items: center; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); cursor: grab; touch-action: none; border: 2px solid var(--line); overflow: hidden; }
+.evo-tile.sel { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); transform: scale(1.04); }
+.evo-ico { font-size: 2rem; line-height: 1; margin-bottom: .6rem; }
+.evo-lv { position: absolute; top: 3px; right: 6px; font-size: .68rem; font-weight: 700; color: var(--muted); }
+.evo-ch { position: absolute; bottom: 9px; left: 0; right: 0; text-align: center; font-size: .95rem; font-weight: 700; line-height: 1; } .evo-ch.long { font-size: .72rem; }
+.evo-mast { position: absolute; bottom: 3px; left: 0; right: 0; display: flex; justify-content: center; gap: 2px; } .evo-mast i { width: 5px; height: 5px; border-radius: 50%; background: var(--line); } .evo-mast i.on { background: var(--gold); }
+.evo-tile.t1 { background: var(--surface); } .evo-tile.t4, .evo-tile.t5 { background: var(--ok-soft); } .evo-tile.t6, .evo-tile.t7, .evo-tile.t8 { background: var(--gold-soft); }
+.evo-tile.t9, .evo-tile.t10, .evo-tile.t11 { background: var(--accent-soft); } .evo-tile.t12, .evo-tile.t13, .evo-tile.t14, .evo-tile.t15, .evo-tile.t16, .evo-tile.t17, .evo-tile.t18, .evo-tile.t19, .evo-tile.t20 { background: linear-gradient(135deg, var(--gold-soft), var(--accent-soft)); border-color: var(--gold); }
+.evo-tile.merged { animation: pop .4s; }
+.evo-tile.ghost { position: fixed; z-index: 120; pointer-events: none; transform: scale(1.1); opacity: .92; }
+.evo-actions { display: flex; gap: .6rem; margin: .8rem 0 .4rem; flex-wrap: wrap; } .evo-actions .btn { flex: 1; min-width: 150px; }
+.evo-spawn:disabled, .evo-up:disabled { opacity: .55; cursor: not-allowed; }
+.evo-ups { display: grid; gap: .5rem; }
+.evo-up { display: grid; grid-template-columns: auto 1fr auto; gap: .7rem; text-align: left; align-items: center; } .evo-up .ico { font-size: 1.5rem; } .evo-up-t { display: grid; } .evo-up-c { font-weight: 700; white-space: nowrap; }
+.evo-up.afford { border-color: var(--ok); background: var(--ok-soft); }
+.evo-ladder { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: .4rem; }
+.evo-step { display: grid; justify-items: center; padding: .4rem .2rem; border-radius: 12px; background: var(--surface2); } .evo-step .evo-ico { margin: 0; font-size: 1.6rem; } .evo-step small { font-size: .65rem; text-align: center; } .evo-step.locked { opacity: .5; filter: grayscale(1); }
+.evo-big { font-size: 4.5rem; } .evo-recall { margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed var(--line); }
+.evo-srcs h4 { margin: .8rem 0 .3rem; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.evo-src-list { display: grid; gap: .3rem; }
+.evo-src-item { display: flex; justify-content: space-between; gap: .6rem; padding: .55rem .8rem; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; text-align: left; }
+.evo-src-item:hover:not(:disabled) { background: var(--surface2); } .evo-src-item.on { border-color: var(--accent); background: var(--accent-soft); } .evo-src-item.off { opacity: .45; cursor: not-allowed; }
+@media (max-width: 800px) { .evo-ico { font-size: 1.7rem; } .evo-coins { font-size: 1.7rem; } }
