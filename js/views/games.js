@@ -287,6 +287,20 @@
 
   const wordPool = () => { const c = gameCol(); if (c) { const w = colWords(c); if (w.length >= 6) return w; } const l = HZ.words.filter(w => srs.get(w.key)); return l.length >= 8 ? l : HZ.words.slice(0, 80); };
 
+  /** Выпадающий список подборок для игр (общий для хаба и отдельных игр); onChange вызывается после смены. */
+  function srcSelect(onChange) {
+    const sel = h('select.input', { onchange: () => { store.s.settings.gameSrc = sel.value; store.save(); if (onChange) onChange(); } });
+    sel.append(h('option', { value: 'auto' }, 'Авто — изученное и выбранный уровень'));
+    const groups = {};
+    HZ.collections.all().filter(c => c.chars.length >= 4).forEach(c => (groups[c.group || 'Другое'] = groups[c.group || 'Другое'] || []).push(c));
+    ['Мои подборки', 'Умные', ...Object.keys(groups).filter(g => g !== 'Мои подборки' && g !== 'Умные')].forEach(g => {
+      if (groups[g]) sel.append(h('optgroup', { label: g }, groups[g].map(c => h('option', { value: c.id }, `${c.name} (${c.chars.length})`))));
+    });
+    const cur = gameCol();
+    sel.value = cur ? cur.id : 'auto';
+    return sel;
+  }
+
   function hub() {
     const view = document.getElementById('view');
     const hard = srs.hardList().map(ch => HZ.byChar[ch]);
@@ -302,22 +316,15 @@
       { ico: '🎓', name: 'Тест уровня', desc: 'Отметьте уже известные иероглифы и подберите темп', go: placement }
     ];
     games.forEach(g => { g.group = g.group || 'Классика'; });
-    const evo = { group: 'Эволюция', ico: '🧬', name: 'Эволюция', desc: 'Idle-игра: отвечай, призывай существ и сливай их. Учит иероглифы из выбранной подборки', go: () => HZ.router.go('#/evo') };
+    const evo = { group: 'Idle и приключения', ico: '🧬', name: 'Эволюция', desc: 'Idle-игра: отвечай, призывай существ и сливай их. Учит иероглифы из выбранной подборки', go: () => HZ.router.go('#/evo') };
     const all = [evo, ...(HZ.games.extra || []), ...games];
-    const order = ['Эволюция', 'Предложения', 'Аркады', 'Классика'];
+    const order = ['Idle и приключения', 'Предложения', 'Аркады', 'Классика'];
     const lvl = h('select.input', { onchange: () => { store.s.settings.sentLvl = lvl.value; store.save(); hub(); } },
       Object.keys(HZ.games.sentLevels || {}).map(k => h('option', { value: k }, HZ.games.sentLevels[k])));
     lvl.value = store.s.settings.sentLvl || '1';
     // источник для всех игр: своя или любая другая подборка
-    const colSel = h('select.input', { onchange: () => { store.s.settings.gameSrc = colSel.value; store.save(); hub(); } });
-    colSel.append(h('option', { value: 'auto' }, 'Авто — изученное и выбранный уровень'));
-    const groups = {};
-    HZ.collections.all().filter(c => c.chars.length >= 4).forEach(c => (groups[c.group || 'Другое'] = groups[c.group || 'Другое'] || []).push(c));
-    ['Мои подборки', 'Умные', ...Object.keys(groups).filter(g => g !== 'Мои подборки' && g !== 'Умные')].forEach(g => {
-      if (groups[g]) colSel.append(h('optgroup', { label: g }, groups[g].map(c => h('option', { value: c.id }, `${c.name} (${c.chars.length})`))));
-    });
+    const colSel = srcSelect(hub);
     const cur = gameCol();
-    colSel.value = cur ? cur.id : 'auto';
     const srcInfo = cur ? `Все игры используют подборку «${cur.name}»: ${colEntries(cur).length} иероглифов, ${colWords(cur).length} слов.` : 'Выберите подборку — во всех играх будут её иероглифы, слова и предложения с ними.';
     ui.clear(view).append(h('div.page',
       h('h1', 'Игры'), h('p.muted', 'Играйте, чтобы закреплять иероглифы. Каждая игра приносит XP и помогает находить слабые места.'),
@@ -331,5 +338,5 @@
       })));
   }
 
-  HZ.games = { hub, runQuiz, runMatch, placement, gameCol, colEntries, colWords, learnedPool, wordPool };
+  HZ.games = { hub, runQuiz, runMatch, placement, srcSelect, gameCol, colEntries, colWords, learnedPool, wordPool };
 })();

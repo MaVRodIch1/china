@@ -46,6 +46,7 @@
     out.flags = Object.assign({}, b.flags, a.flags);
     out.texts = Object.assign({}, b.texts);
     Object.keys(a.texts || {}).forEach(id => { const x = a.texts[id], y = (b.texts || {})[id]; out.texts[id] = y ? { done: Math.min(x.done, y.done), best: Math.max(x.best, y.best), n: Math.max(x.n, y.n) } : x; });
+    if (b.walk && (!a.walk || (b.walk.upd || 0) > (a.walk.upd || 0))) out.walk = b.walk; // «Долина знаков»: побеждает более свежее состояние
     if (b.evo && (!a.evo || (b.evo.upd || 0) > (a.evo.upd || 0))) out.evo = b.evo; // игра «Эволюция»: побеждает более свежее состояние
     return out;
   }

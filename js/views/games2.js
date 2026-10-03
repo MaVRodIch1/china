@@ -412,6 +412,7 @@
       G.runQuiz({ title: 'Тоны', pool, makeQ: e => toneQ(e) || toneQ(pool.find(x => toneQ(x))), count: 10, kind: 'quiz', types: ['tone'] }); } }
   ];
   G.sentLevels = LV;
+  G.mixPool = mixPool; G.summary = summary; G.frame = frame;
   G.sentPoolSize = () => sentPool().length;
   HZ.sentences = { bank, build, sentPool };
 })();

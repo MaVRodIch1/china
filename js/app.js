@@ -22,6 +22,7 @@
           case 'games': HZ.games.hub(); break;
           case 'texts': nav = 'library'; HZ.views.texts(); break;
           case 'text': nav = 'library'; HZ.views.text(a); break;
+          case 'valley': nav = 'games'; HZ.valley.view(); break;
           case 'evo': nav = 'evo'; HZ.evo.view(); break;
           case 'library': HZ.views.library(); break;
           case 'char': nav = 'library'; HZ.views.char(a); break;

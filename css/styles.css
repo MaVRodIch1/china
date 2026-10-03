@@ -320,3 +320,16 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .rd-opt.right { background: var(--ok-soft); border-color: var(--ok); } .rd-opt.wrong { background: var(--bad-soft); border-color: var(--bad); } .rd-opt:disabled { cursor: default; }
 .rd-result-box { padding: .8rem 1rem; border-radius: 14px; background: var(--gold-soft); margin-top: .6rem; }
 @media (max-width: 800px) { .rd-line { font-size: 1.45rem; } .rd-sheet { padding-bottom: calc(1rem + 62px); } .rd-pad { height: 260px; } .rd-sheet-w { font-size: 2rem; } }
+
+/* Игры с управлением героем */
+.walk { max-width: 980px; }
+.wk-top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; } .wk-coins { font-size: 1.9rem; line-height: 1; } .wk-pills { display: flex; gap: .4rem; }
+.wk-bar { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: .5rem 0; } .wk-src { display: flex; align-items: center; gap: .3rem; margin-left: auto; } .wk-src .input { width: auto; max-width: 240px; padding: .3rem .6rem; font-size: .85rem; }
+.wk-bar .btn.afford { border-color: var(--ok); background: var(--ok-soft); }
+.wk-banner { min-height: 2.6em; padding: .5rem .9rem; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); margin-bottom: .5rem; font-size: 1.05rem; display: flex; flex-direction: column; justify-content: center; }
+.wk-target { font-size: 1.5rem; color: var(--accent); } .wk-hint { font-weight: 600; } .wk-reveal { color: var(--bad); }
+.wk-canvas { display: block; width: 100%; aspect-ratio: 960 / 600; border-radius: 18px; border: 1px solid var(--line); background: var(--surface2); touch-action: none; user-select: none; -webkit-user-select: none; outline: none; cursor: crosshair; }
+.wk-canvas:focus-visible { border-color: var(--accent); }
+.wk-pad { display: none; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-top: .6rem; } .wk-pad .btn { font-size: 1.4rem; }
+.wk-heroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: .5rem; } .wk-hero { display: grid; justify-items: center; gap: .1rem; padding: .4rem; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; } .wk-hero.on { border-color: var(--accent); background: var(--accent-soft); } .wk-hero .evo-sprite { width: 64px; height: 64px; }
+@media (max-width: 800px), (pointer: coarse) { .wk-pad { display: grid; } }

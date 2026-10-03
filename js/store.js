@@ -18,7 +18,8 @@
     quests: {},        // {date, done:{id:true}}
     best: {},          // рекорды игр
     evo: null,         // состояние игры «Эволюция»
-    texts: {}          // прочитанные тексты: id -> {done, best, n}
+    texts: {},         // прочитанные тексты: id -> {done, best, n}
+    walk: null         // «Долина знаков»
   });
 
   let state;
