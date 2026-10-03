@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ханьцзы — учим иероглифы</title>
+<meta name="description" content="Изучение китайских иероглифов: интервальные повторения, мнемоники, игры.">
+<meta name="theme-color" content="#faf7f2">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <a class="logo" href="#/"><span class="zh">汉</span><b>Ханьцзы</b></a>
+    <div id="hud" class="hud"></div>
+    <button id="theme-toggle" class="icon-btn" aria-label="Сменить тему" title="Тема">🌓</button>
+    <a class="icon-btn" href="#/settings" aria-label="Настройки" title="Настройки">⚙</a>
+  </header>
+  <nav class="nav" aria-label="Основная навигация">
+    <a data-nav="home" href="#/"><i>🏠</i><span>Главная</span></a>
+    <a data-nav="study" href="#/study/review"><i>🔁</i><span>Учить</span></a>
+    <a data-nav="games" href="#/games"><i>🎮</i><span>Игры</span></a>
+    <a data-nav="library" href="#/library"><i>🔎</i><span>Иероглифы</span></a>
+    <a data-nav="collections" href="#/collections"><i>🗂️</i><span>Подборки</span></a>
+    <a data-nav="stats" href="#/stats"><i>📊</i><span>Статистика</span></a>
+  </nav>
+  <main id="view" tabindex="-1"></main>
+</div>
+<div id="toasts" aria-live="polite"></div>
+<div id="modal" class="modal"></div>
+<canvas id="confetti"></canvas>
+<noscript>Для работы приложения нужен JavaScript.</noscript>
+<script src="js/core.js"></script>
+<script src="js/data/hsk-starter.js"></script>
+<script src="js/store.js"></script>
+<script src="js/srs.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/gami.js"></script>
+<script src="js/collections.js"></script>
+<script src="js/views/card.js"></script>
+<script src="js/views/study.js"></script>
+<script src="js/views/games.js"></script>
+<script src="js/views/library.js"></script>
+<script src="js/views/home.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
