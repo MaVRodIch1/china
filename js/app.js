@@ -62,6 +62,8 @@
     window.addEventListener('hashchange', router.render);
     document.addEventListener('click', e => { const a = e.target.closest('a[href^="#/"]'); if (a && a.getAttribute('href') === location.hash) { e.preventDefault(); router.render(); } });
     HZ.gami.questsToday();
+    HZ.sync.onChange(() => { if (location.hash === '#/settings') HZ.views.settings(); });
+    HZ.sync.init();
     router.render();
     welcome();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });

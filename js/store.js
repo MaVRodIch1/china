@@ -34,7 +34,10 @@
   load();
 
   let timer = null;
+  const saveListeners = [];
   function save() {
+    state.updated = Date.now();
+    saveListeners.forEach(f => f());
     clearTimeout(timer);
     timer = setTimeout(flush, 150);
   }
@@ -46,6 +49,8 @@
   HZ.store = {
     get s() { return state; },
     save, flush,
+    onSave(f) { saveListeners.push(f); },
+    replace(next) { state = Object.assign(defaults(), next, { settings: Object.assign(defaults().settings, next.settings || {}) }); flush(); },
     today() { // журнал за сегодня
       const k = HZ.dayKey();
       return state.log[k] || (state.log[k] = { rev: 0, ok: 0, newc: 0, xp: 0, games: 0 });

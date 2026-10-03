@@ -158,6 +158,7 @@
     };
     ui.clear(view).append(h('div.page.narrow',
       h('h1', 'Настройки'),
+      cloudPanel(),
       h('section.panel',
         row('Тема', sel('theme', [['auto', 'Как в системе'], ['light', 'Светлая'], ['dark', 'Тёмная']], applyTheme)),
         row('Новых иероглифов в день', sel('newPerDay', [1, 2, 3, 5, 7, 10, 15, 20, 30].map(n => [n, String(n)])), 'Чем больше — тем больше повторений в ближайшие дни.'),
@@ -171,10 +172,31 @@
         row('Экспорт прогресса', h('button.btn', { onclick: () => { const a = h('a', { href: URL.createObjectURL(new Blob([store.exportJSON()], { type: 'application/json' })), download: `hanzi-progress-${HZ.dayKey()}.json` }); a.click(); } }, '⬇ Скачать'), 'Резервная копия: перенос на другое устройство.'),
         row('Импорт прогресса', h('button.btn', { onclick: () => file.click() }, '⬆ Загрузить'), 'Заменит текущий прогресс.'), file,
         row('Тест уровня', h('button.btn', { onclick: () => HZ.games.placement() }, 'Пройти')),
-        row('Сбросить всё', h('button.btn.danger', { onclick: () => ui.confirmBox('Сбросить весь прогресс?', 'Будут удалены карточки, заметки, подборки и достижения. Это нельзя отменить.', 'Сбросить', () => { store.reset(); applyTheme(); HZ.gami.refreshHeader(); HZ.router.go('#/'); ui.toast('Прогресс сброшен'); }, true) }, 'Сбросить'))),
+        row('Сбросить всё', h('button.btn.danger', { onclick: () => ui.confirmBox('Сбросить весь прогресс?', 'Будут удалены карточки, заметки, подборки и достижения. Это нельзя отменить.', 'Сбросить', () => { HZ.sync.wipe(); store.reset(); applyTheme(); HZ.gami.refreshHeader(); HZ.router.go('#/'); ui.toast('Прогресс сброшен'); }, true) }, 'Сбросить'))),
       h('section.panel', h('h3', 'О приложении'),
         h('p.muted', 'Прогресс хранится только в вашем браузере (localStorage). Новые наборы иероглифов добавляются файлом с HZ.addPack(...) — см. README.'),
         h('p.muted.small', `Иероглифов в базе: ${HZ.chars.length}. Порядок черт — Hanzi Writer (нужен интернет).`))));
+  }
+
+  function cloudPanel() {
+    const sy = HZ.sync, h2 = h;
+    if (!sy.enabled) return h2('section.panel', h2('h3', '☁️ Облако'), h2('p.muted', 'Синхронизация между устройствами выключена: в js/config.js не заданы ключи Supabase (инструкция — в README).'));
+    const msg = { idle: 'Не выполнен вход', syncing: 'Синхронизация…', ok: sy.lastSync ? 'Синхронизировано в ' + new Date(sy.lastSync).toLocaleTimeString('ru-RU') : 'Подключено', error: 'Ошибка: ' + sy.error }[sy.status] || '';
+    const box = h2('section.panel', h2('h3', '☁️ Облако'), h2('p' + (sy.status === 'error' ? '.gold-text' : '.muted'), msg));
+    if (sy.user) {
+      box.append(h2('p', 'Вы вошли как ', h2('b', sy.user.email || '')),
+        h2('div.row.wrap', h2('button.btn', { onclick: () => sy.syncNow() }, '🔄 Синхронизировать'), h2('button.btn', { onclick: () => sy.signOut().then(() => ui.toast('Вы вышли')) }, 'Выйти')),
+        h2('p.muted.small', 'Прогресс сохраняется в облако автоматически. Настройки (тема, темп) остаются локальными.'));
+    } else {
+      const email = h2('input.input', { type: 'email', placeholder: 'ваша@почта.com', autocomplete: 'email' });
+      const btn = h2('button.btn.primary', { onclick: async () => {
+        const v = email.value.trim(); if (!/^\S+@\S+\.\S+$/.test(v)) { ui.toast('Введите корректный email', 'warn'); return; }
+        btn.disabled = true;
+        try { await sy.signIn(v); ui.toast('Ссылка для входа отправлена на ' + v + ' ✉️', '', 5000); } catch (e) { ui.toast('Не удалось отправить: ' + (e.message || e), 'warn', 5000); } finally { btn.disabled = false; }
+      } }, 'Войти по ссылке');
+      box.append(h2('p.muted', 'Войдите, чтобы сохранять прогресс в облаке и продолжать на любом устройстве. Мы отправим ссылку для входа — пароль не нужен.'), h2('div.row.wrap', email, btn));
+    }
+    return box;
   }
 
   function applyTheme() {
