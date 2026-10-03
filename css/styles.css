@@ -273,3 +273,20 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .evo-step .evo-sprite { width: 100%; height: 52px; } .evo-step.locked .evo-sprite { filter: brightness(0); opacity: .22; }
 .evo-big .evo-sprite { width: 150px; height: 150px; }
 @media (max-width: 800px) { .evo-card { grid-template-columns: auto 1fr; } .evo-card .btn { grid-column: 1 / -1; justify-self: start; } .evo-flash-ch { font-size: 3.4rem; } }
+
+/* «Эволюция»: компактное поле и окно карточки */
+.evo { max-width: 480px; }
+.evo-board { gap: .3rem; padding: .4rem; border-radius: 16px; }
+.evo-cell { border-radius: 10px; border-width: 1.5px; }
+.evo-tile { border-radius: 10px; border-width: 1.5px; }
+.evo-tile .evo-sprite { top: 4%; height: 66%; }
+.evo-lv { font-size: .6rem; top: 2px; right: 4px; }
+.evo-ch { font-size: .82rem; bottom: 8px; } .evo-ch.long { font-size: .62rem; }
+.evo-mast { bottom: 2px; } .evo-mast i { width: 4px; height: 4px; }
+.evo-actions { margin: .5rem 0; }
+.evo-card.big { display: grid; grid-template-columns: 1fr; justify-items: center; text-align: center; gap: .3rem; border: 0; box-shadow: none; padding: 0; background: none; }
+.evo-card.big .evo-card-sp .evo-sprite { width: 110px; height: 110px; }
+.evo-card.big .evo-card-ch { font-size: 4.6rem; } .evo-card.big .evo-card-ch.long { font-size: 2.8rem; }
+.evo-card.big .evo-card-py { font-size: 1.3rem; justify-content: center; } .evo-card.big .evo-card-m { font-size: 1.15rem; }
+.evo-card.big .evo-mast.inline { justify-content: center; } .evo-card.big .evo-card-s { width: 100%; text-align: left; }
+.evo-actions .btn.lg { padding: .6rem .6rem; font-size: 1rem; min-width: 130px; }

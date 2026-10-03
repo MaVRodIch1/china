@@ -125,6 +125,7 @@
     { id: 'evo5', ico: '🧬', name: 'Эволюционист', desc: 'Открыть 5-й вид в «Эволюции»', ok: c => !!c.flags.evo5 },
     { id: 'evo100', ico: '🐸', name: 'Из грязи в князи', desc: '100 верных ответов в «Эволюции»', ok: c => c.evoRight >= 100 },
     { id: 'evoMax', ico: '👑', name: 'Владыка вселенной', desc: 'Вырастить «Вселенную» — 20-й вид в «Эволюции»', ok: c => !!c.flags.evoMax },
+    { id: 'evoReb', ico: '🌸', name: 'Новая эра', desc: 'Совершить перерождение в «Эволюции»', ok: c => !!c.flags.evoReb },
     { id: 'hsk1', ico: '🏅', name: 'HSK 1 покорён', desc: 'Начать изучать все иероглифы HSK 1 из набора', ok: c => c.hsk1 }
   ];
   function ctx() {

@@ -13,14 +13,14 @@
   const sprite = (li, t, cls = '') => h('img.evo-sprite' + cls, { src: spriteSrc(li, t), alt: LINES[li][1], draggable: false });
   const keyText = k => (HZ.isKey(k) ? k.slice(2) : k);
   function say(e, k) { if (e.sound === false || !k) return; const en = HZ.entry(k); if (en) ui.speak(en.ch); }
-  const COLS = 4;
+  const COLS = 5;
   const MAST_MAX = 5;
   const OFFLINE_CAP = 8 * 3600; // сек
 
   const UPS = {
     inc: { ico: '💰', name: 'Доход', desc: lv => `+25% к доходу (сейчас ×${(1 + .25 * lv).toFixed(2)})`, cost: lv => Math.round(100 * Math.pow(2.4, lv)), max: 25 },
     disc: { ico: '🏷️', name: 'Скидка на призыв', desc: lv => `−4% к цене призыва (сейчас −${lv * 4}%)`, cost: lv => Math.round(150 * Math.pow(2.6, lv)), max: 10 },
-    slots: { ico: '🔲', name: 'Больше клеток', desc: lv => `+4 клетки (сейчас ${12 + 4 * lv})`, cost: lv => Math.round(500 * Math.pow(4, lv)), max: 4 },
+    slots: { ico: '🔲', name: 'Больше клеток', desc: lv => `+5 клеток (сейчас ${15 + 5 * lv})`, cost: lv => Math.round(500 * Math.pow(4, lv)), max: 4 },
     off: { ico: '🌙', name: 'Доход офлайн', desc: lv => `Пока вас нет, существа дают ${40 + lv * 10}% дохода`, cost: lv => Math.round(200 * Math.pow(2.5, lv)), max: 6 }
   };
 
@@ -38,11 +38,12 @@
   function init() {
     let e = store.s.evo;
     if (!e || typeof e !== 'object') e = store.s.evo = {};
-    const d = { coins: 60, slots: 12, tiles: [], chars: [], maxTier: 1, spawned: 0, merges: 0, answered: 0, right: 0, bestCombo: 0,
+    const d = { coins: 60, slots: 15, jade: 0, reb: 0, bestTier: 1, tiles: [], chars: [], maxTier: 1, spawned: 0, merges: 0, answered: 0, right: 0, bestCombo: 0,
       mast: {}, ups: { inc: 0, disc: 0, slots: 0, off: 0 }, src: 'c:hsk1', sound: true, sp: [], last: Date.now(), upd: 0 };
     Object.keys(d).forEach(k => { if (e[k] === undefined) e[k] = d[k]; });
     e.ups = Object.assign({}, d.ups, e.ups);
-    const n = COLS * Math.ceil((12 + 4 * e.ups.slots) / COLS);
+    if (e.maxTier > e.bestTier) e.bestTier = e.maxTier;
+    const n = 15 + 5 * e.ups.slots;
     e.slots = n;
     if (!Array.isArray(e.sp)) e.sp = [];
     while (e.tiles.length < n) { e.tiles.push(0); e.chars.push(null); }
@@ -59,10 +60,12 @@
     let n = 0; Object.values(store.s.cards).forEach(c => { if (c.st === 'review') n++; });
     return Math.min(2, n * 0.01);
   }
-  const mult = e => (1 + .25 * e.ups.inc) * (1 + knownBonus());
+  const mult = e => (1 + .25 * e.ups.inc) * (1 + knownBonus()) * (1 + .04 * e.jade);
   const tileInc = (e, i) => tierInc(e.tiles[i]) * (1 + .2 * ((e.mast[e.chars[i]] || 0))) ;
   function income(e) { let s = 0; for (let i = 0; i < e.tiles.length; i++) if (e.tiles[i]) s += tileInc(e, i); return s * mult(e); }
-  const baseTier = e => Math.max(1, e.maxTier - 6);
+  const gapOf = e => Math.max(3, 6 - Math.floor(Math.log2(1 + e.jade / 8))); // перерождения поднимают стартовый уровень существ
+  const baseTier = e => Math.max(1, e.maxTier - gapOf(e));
+  const rebirthGain = e => (e.maxTier >= 10 ? Math.pow(e.maxTier - 8, 2) : 0);
   const filled = e => e.tiles.filter(Boolean).length;
   function spawnCost(e) { return Math.round(10 * Math.pow(3.2, baseTier(e) - 1) * (1 - .04 * e.ups.disc) * (1 + .03 * filled(e))); }
 
@@ -124,8 +127,9 @@
     T.el.srcBtn = h('button.btn.sm', { type: 'button', onclick: pickSource });
     T.el.board = h('div.evo-board');
     T.el.wrap = h('div.evo-wrap', T.el.board);
-    T.el.info = h('div.evo-info');
-    T.el.snd = h('button.btn.sm', { type: 'button', onclick: () => { const e2 = E(); e2.sound = e2.sound === false; touch(); refresh(); if (e2.sound) say(e2, e2.chars[T.info]); } });
+    T.el.snd = h('button.btn.sm', { type: 'button', onclick: () => { const e2 = E(); e2.sound = e2.sound === false; touch(); refresh(); } });
+    T.el.rebText = h('p.muted.small', '');
+    T.el.rebBtn = h('button.btn.primary', { type: 'button', onclick: rebirth }, '🌸 Переродиться');
     T.el.ups = h('div.evo-ups');
     T.el.ladder = h('div.evo-bestiary');
 
@@ -134,11 +138,11 @@
         h('div', h('div.evo-coin-row', h('span.evo-coin', '🪙'), T.el.coins), T.el.inc),
         T.el.combo),
       h('div.evo-src', h('span.muted', 'Вопросы по: '), T.el.srcBtn, T.el.snd),
-      T.el.wrap,
-      T.el.info,
       h('div.evo-actions', T.el.spawn, T.el.merge),
-      h('p.muted.small.center', 'Ответьте верно — появится существо с иероглифом. Коснитесь существа — увидите карточку и услышите звучание. Два одинаковых сливаются в следующее, и оно получает новый иероглиф. Чем лучше знаете знак (точки), тем больше дохода.'),
+      T.el.wrap,
+      h('p.muted.small.center', 'Ответьте верно — появится существо с иероглифом. Коснитесь существа — откроется карточка и прозвучит знак. Перетащите на такое же — они сольются в следующее и получат новый иероглиф. Чем лучше знаете знак (точки), тем больше дохода.'),
       h('div.panel', h('h3', 'Улучшения'), T.el.ups),
+      h('div.panel', h('h3', '🌸 Перерождение'), T.el.rebText, T.el.rebBtn),
       h('div.panel', h('h3', 'Бестиарий'), h('p.muted.small', 'Стадии существ открываются по мере роста уровня эволюции.'), T.el.ladder));
 
     buildBoard(); drawUps(); drawLadder(); refresh();
@@ -169,7 +173,7 @@
   function buildBoard() {
     const e = E();
     ui.clear(T.el.board);
-    T.el.board.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+    T.el.board.style.gridTemplateColumns = `repeat(${COLS}, minmax(0, 1fr))`;
     T.cells = [];
     for (let i = 0; i < e.tiles.length; i++) {
       const c = h('div.evo-cell', { dataset: { i: String(i) } });
@@ -195,25 +199,26 @@
       ui.clear(c); c.classList.toggle('empty', !e.tiles[i]);
       const n = tileNode(e, i); if (n) c.appendChild(n);
     });
-    drawInfo();
   }
 
-  /* Карточка выбранного существа: иероглиф, чтение, значение, пример, озвучка */
-  function drawInfo() {
+  /* Карточка существа (окно по касанию): иероглиф, чтение, значение, пример, озвучка */
+  function showCard(i) {
     const e = E();
-    if (!T || !T.el.info) return;
-    ui.clear(T.el.info);
-    const i = T.info, k = i >= 0 ? e.chars[i] : null, en = k ? HZ.entry(k) : null;
-    if (!en || !e.tiles[i]) { T.el.info.append(h('p.muted.small.center', 'Коснитесь существа, чтобы увидеть его иероглиф')); return; }
-    const m = e.mast[k] || 0, sn = en.sents && en.sents[0];
-    T.el.info.append(h('div.evo-card.pop-in',
-      h('div.evo-card-ch.zh' + (en.ch.length > 2 ? '.long' : ''), { lang: 'zh', onclick: () => say(e, k) }, en.ch),
-      h('div.evo-card-t',
-        h('div.evo-card-py', ui.py(en.py, 'lg'), ' ', h('button.icon-btn.speak', { type: 'button', title: 'Прослушать', 'aria-label': 'Прослушать', onclick: () => ui.speak(en.ch) }, '🔊')),
-        h('div.evo-card-m', en.m),
-        h('div.evo-mast.inline', Array.from({ length: MAST_MAX }, (_, j) => h('i' + (j < m ? '.on' : ''))), h('small.muted', ` знание ${m}/${MAST_MAX} · +${Math.round(m * 20)}% дохода`)),
-        sn ? h('div.evo-card-s', h('span.zh', sn.z), ' ', h('button.icon-btn.speak', { type: 'button', onclick: () => ui.speak(sn.z), 'aria-label': 'Прослушать пример' }, '🔊'), h('div.muted.small', sn.p + ' — ' + sn.m)) : null),
-      h('a.btn.sm', { href: en.isWord ? '#/word/' + encodeURIComponent(en.ch) : '#/char/' + en.ch }, 'Карточка →')));
+    const k = e.chars[i], en = k ? HZ.entry(k) : null;
+    if (!en || !e.tiles[i]) return;
+    const m = e.mast[k] || 0, sn = en.sents && en.sents[0], t = e.tiles[i], li = lineOf(e, i);
+    say(e, k);
+    const mate = t < MAXT ? e.tiles.findIndex((x, j) => j !== i && x === t) : -1;
+    ui.modal(`${LINES[li][1]} · уровень ${t}`, h('div.evo-card.big',
+      h('div.evo-card-sp', sprite(li, t)),
+      h('div.evo-card-ch.zh' + (en.ch.length > 2 ? '.long' : ''), { lang: 'zh', onclick: () => ui.speak(en.ch) }, en.ch),
+      h('div.evo-card-py', ui.py(en.py, 'lg'), ' ', h('button.icon-btn.speak', { type: 'button', title: 'Прослушать', 'aria-label': 'Прослушать', onclick: () => ui.speak(en.ch) }, '🔊')),
+      h('div.evo-card-m', en.m),
+      h('div.evo-mast.inline', Array.from({ length: MAST_MAX }, (_, j) => h('i' + (j < m ? '.on' : ''))), h('small.muted', ` знание ${m}/${MAST_MAX} · +${Math.round(m * 20)}% дохода`)),
+      h('div.muted.small', `Доход существа: ${fmt(tileInc(e, i) * mult(e))} 🪙/с`),
+      sn ? h('div.evo-card-s', h('span.zh', sn.z), ' ', h('button.icon-btn.speak', { type: 'button', onclick: () => ui.speak(sn.z), 'aria-label': 'Прослушать пример' }, '🔊'), h('div.muted.small', sn.p + ' — ' + sn.m)) : null,
+      h('a.btn.sm.mt', { href: en.isWord ? '#/word/' + encodeURIComponent(en.ch) : '#/char/' + en.ch }, 'Полная карточка →')),
+      [{ label: 'Закрыть' }, ...(mate >= 0 ? [{ label: '✨ Слить с таким же', primary: true, onclick: () => { setTimeout(() => merge(i, mate), 0); } }] : [])]);
   }
 
   /* Вспышка с новым иероглифом поверх поля */
@@ -230,7 +235,7 @@
   let drag = null;
   function down(ev, i) {
     const e = E();
-    if (ev.button > 0 || !e.tiles[i]) { if (e.tiles[i] === 0 && T.sel >= 0) { moveTo(T.sel, i); } return; }
+    if (ev.button > 0 || !e.tiles[i]) return;
     drag = { i, x: ev.clientX, y: ev.clientY, moved: false, ghost: null, id: ev.pointerId };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up, { once: true });
@@ -267,10 +272,7 @@
       return;
     }
     // клик
-    const e = E();
-    if (T.sel === d.i) { T.sel = -1; drawTiles(); return; }
-    if (T.sel >= 0 && e.tiles[T.sel] && e.tiles[T.sel] === e.tiles[d.i]) return merge(T.sel, d.i);
-    T.sel = d.i; T.info = d.i; drawTiles(); say(e, e.chars[d.i]);
+    T.info = d.i; drawTiles(); showCard(d.i);
   }
 
   function moveTo(a, b) {
@@ -279,7 +281,7 @@
     if (a === b || !e.tiles[a]) return drawTiles();
     if (!e.tiles[b]) { // переместить
       e.tiles[b] = e.tiles[a]; e.chars[b] = e.chars[a]; e.sp[b] = lineOf(e, a); e.tiles[a] = 0; e.chars[a] = null; e.sp[a] = null;
-      T.info = b; touch(); drawTiles(); return;
+      T.info = b; touch(); drawTiles(); say(e, e.chars[b]); return;
     }
     if (e.tiles[a] === e.tiles[b]) return merge(a, b);
     lineOf(e, a); lineOf(e, b);
@@ -395,6 +397,25 @@
   }
   function spawnTier(e) { return Math.min(MAXT, baseTier(e) + Math.min(2, Math.floor(T.combo / 5))); }
 
+  /* ====== Перерождение ====== */
+  function rebirth() {
+    const e = E(), g = rebirthGain(e);
+    if (g <= 0) return;
+    ui.confirmBox('Перерождение', `Вы получите +${g} 💚 нефрита (постоянный бонус к доходу, а существа начнут расти с более высокого уровня). Монеты, существа и улучшения сбросятся. Знание иероглифов и бестиарий останутся.`, 'Переродиться', () => {
+      const e2 = E();
+      e2.jade += g; e2.reb++;
+      e2.coins = 60 + 25 * e2.jade;
+      e2.ups = { inc: 0, disc: 0, slots: 0, off: 0 };
+      e2.tiles = []; e2.chars = []; e2.sp = []; e2.maxTier = 1; e2.spawned = 0;
+      e2.last = Date.now();
+      init(); T.combo = 0; T.sel = -1; T.info = -1;
+      HZ.gami.addXP(20 + g); HZ.gami.flag('evoReb');
+      ui.confetti(160); ui.sfx('level');
+      touch(); buildBoard(); drawUps(); drawLadder(); refresh();
+      ui.toast(`🌸 Новая эра ${e2.reb + 1}! Нефрит: ${e2.jade}`, 'gold', 4500);
+    });
+  }
+
   /* ====== Улучшения, подборка ====== */
   function buy(k) {
     const e = E(), u = UPS[k], lv = e.ups[k];
@@ -424,7 +445,7 @@
     ui.clear(T.el.ladder);
     T.el.ladder.append(...LINES.map(([, name, S], li) => h('div.evo-line', h('b', name),
       h('div.evo-stages', Array.from({ length: S }, (_, st) => {
-        const first = Math.floor(st * MAXT / S) + 1, known = first <= e.maxTier;
+        const first = Math.floor(st * MAXT / S) + 1, known = first <= Math.max(e.bestTier || 1, e.maxTier);
         return h('div.evo-step' + (known ? '' : '.locked'), { title: known ? `${name}, с уровня ${first}` : 'Откроется на уровне ' + first },
           sprite(li, first), h('small', 'ур. ' + first));
       })))));
@@ -434,13 +455,17 @@
     const e = E();
     if (!T) return;
     T.el.coins.textContent = fmt(e.coins);
-    T.el.inc.textContent = `+${fmt(income(e))} 🪙/с · бонус за выученное: +${Math.round(knownBonus() * 100)}%`;
+    T.el.inc.textContent = `+${fmt(income(e))} 🪙/с · выученное +${Math.round(knownBonus() * 100)}%` + (e.jade ? ` · 💚 ${e.jade}` : '');
     const cost = spawnCost(e), full = e.tiles.indexOf(0) < 0;
     T.el.spawn.textContent = full ? 'Поле заполнено' : `🧬 Призвать · 🪙 ${fmt(cost)}`;
     T.el.spawn.disabled = full || e.coins < cost;
     T.el.combo.textContent = T.combo >= 2 ? `🔥 Серия ×${T.combo}${T.combo >= 5 ? ' · бонус к виду' : ''}` : `✔ ${e.right}/${e.answered}`;
     T.el.combo.classList.toggle('hot', T.combo >= 2);
     T.el.srcBtn.textContent = '📚 ' + srcName(e.src) + ' ▾';
+    const g = rebirthGain(e);
+    T.el.rebText.textContent = `Нефрит 💚 ${e.jade} (+${Math.round(e.jade * 4)}% к доходу${gapOf(e) < 6 ? `, существа сразу появляются на ${6 - gapOf(e)} ур. выше` : ''}). Перерождений: ${e.reb}. Сбрасываются монеты, существа и улучшения; знание иероглифов, бестиарий и нефрит остаются. ` + (g > 0 ? `Сейчас можно получить +${g} 💚.` : `Доступно с 10-го уровня эволюции (сейчас ${e.maxTier}).`);
+    T.el.rebBtn.textContent = g > 0 ? `🌸 Переродиться · +${g} 💚` : '🌸 Переродиться';
+    T.el.rebBtn.disabled = g <= 0;
     T.el.snd.textContent = e.sound === false ? '🔇 Звук выкл' : '🔊 Звук вкл';
     if (T.el.upBtns) Object.keys(UPS).forEach(k => { const u = UPS[k]; T.el.upBtns[k].classList.toggle('afford', e.ups[k] < u.max && e.coins >= u.cost(e.ups[k])); });
   }
