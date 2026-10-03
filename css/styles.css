@@ -213,7 +213,6 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .evo-up { display: grid; grid-template-columns: auto 1fr auto; gap: .7rem; text-align: left; align-items: center; } .evo-up .ico { font-size: 1.5rem; } .evo-up-t { display: grid; } .evo-up-c { font-weight: 700; white-space: nowrap; }
 .evo-up.afford { border-color: var(--ok); background: var(--ok-soft); }
 .evo-ladder { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: .4rem; }
-.evo-step { display: grid; justify-items: center; padding: .4rem .2rem; border-radius: 12px; background: var(--surface2); } .evo-step .evo-ico { margin: 0; font-size: 1.6rem; } .evo-step small { font-size: .65rem; text-align: center; } .evo-step.locked { opacity: .5; filter: grayscale(1); }
 .evo-big { font-size: 4.5rem; } .evo-recall { margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed var(--line); }
 .evo-srcs h4 { margin: .8rem 0 .3rem; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
 .evo-src-list { display: grid; gap: .3rem; }
@@ -252,3 +251,25 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .mem-back { font-family: var(--zh); font-size: 1.8rem; font-weight: 700; opacity: .85; } .mem-face { position: absolute; inset: 0; display: none; place-items: center; background: var(--surface); color: var(--text); padding: .2rem; font-size: .85rem; font-weight: 600; text-align: center; line-height: 1.15; word-break: break-word; } .mem-face.z { font-size: 1.5rem; font-weight: 700; }
 .mem-card.open .mem-face, .mem-card.matched .mem-face { display: grid; } .mem-card.open { border-color: var(--accent); } .mem-card.matched { border-color: var(--ok); opacity: .75; } .mem-card.matched .mem-face { background: var(--ok-soft); }
 @media (max-width: 800px) { .sent-zh { font-size: 1.5rem; } .mem-face.z { font-size: 1.25rem; } }
+
+/* «Эволюция»: спрайты существ, карточка иероглифа, бестиарий */
+.evo-sprite { object-fit: contain; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+.evo-tile .evo-sprite { position: absolute; left: 7%; top: 5%; width: 86%; height: 68%; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .25)); }
+.evo-tile.info { border-color: var(--blue); }
+.evo-tile.sel.info { border-color: var(--accent); }
+.evo-tile:hover .evo-sprite { transform: scale(1.06); transition: transform .15s; }
+.evo-wrap { position: relative; }
+.evo-flash { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; justify-items: center; text-align: center; gap: .1rem; background: rgba(20, 20, 30, .72); color: #fff; border-radius: 20px; animation: pop .3s; pointer-events: none; transition: opacity .4s; }
+.evo-flash.out { opacity: 0; } .evo-flash .muted { color: #cfcfd6; } .evo-flash-ch { font-size: 4.2rem; font-weight: 700; line-height: 1.1; } .evo-flash .py .t1, .evo-flash .py .t2, .evo-flash .py .t3, .evo-flash .py .t4 { filter: brightness(1.25); }
+.evo-info { margin-top: .6rem; min-height: 54px; }
+.evo-card { display: grid; grid-template-columns: auto 1fr auto; gap: .8rem; align-items: center; padding: .7rem .9rem; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.evo-card-ch { font-size: 2.8rem; font-weight: 700; line-height: 1.1; cursor: pointer; min-width: 1.3em; text-align: center; } .evo-card-ch.long { font-size: 1.8rem; }
+.evo-card-t { display: grid; gap: .15rem; min-width: 0; } .evo-card-py { font-size: 1.05rem; display: flex; align-items: center; gap: .2rem; } .evo-card-m { font-weight: 600; }
+.evo-card-s { font-size: .95rem; margin-top: .2rem; padding-top: .3rem; border-top: 1px dashed var(--line); } .evo-card-s .zh { font-weight: 600; }
+.evo-mast.inline { position: static; justify-content: flex-start; align-items: center; gap: 3px; } .evo-mast.inline i { width: 7px; height: 7px; }
+.evo-bestiary { display: grid; gap: .6rem; } .evo-line { display: grid; gap: .2rem; } .evo-line b { font-size: .85rem; color: var(--muted); }
+.evo-stages { display: grid; grid-template-columns: repeat(6, 1fr); gap: .35rem; }
+.evo-step { display: grid; justify-items: center; align-content: end; gap: .1rem; padding: .3rem .2rem; border-radius: 12px; background: var(--surface2); min-height: 76px; } .evo-step small { font-size: .65rem; color: var(--muted); }
+.evo-step .evo-sprite { width: 100%; height: 52px; } .evo-step.locked .evo-sprite { filter: brightness(0); opacity: .22; }
+.evo-big .evo-sprite { width: 150px; height: 150px; }
+@media (max-width: 800px) { .evo-card { grid-template-columns: auto 1fr; } .evo-card .btn { grid-column: 1 / -1; justify-self: start; } .evo-flash-ch { font-size: 3.4rem; } }

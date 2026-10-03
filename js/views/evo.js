@@ -4,12 +4,15 @@
   'use strict';
   const HZ = window.HZ, ui = HZ.ui, h = ui.h, store = HZ.store, srs = HZ.srs;
 
-  const TIERS = [
-    ['🦠', 'Микроб'], ['🐛', 'Гусеница'], ['🐟', 'Рыбка'], ['🐸', 'Лягушка'], ['🦎', 'Ящерица'], ['🐢', 'Черепаха'], ['🐊', 'Крокодил'],
-    ['🦖', 'Динозавр'], ['🐘', 'Слон'], ['🐒', 'Обезьяна'], ['🧑', 'Человек'], ['🧙', 'Мудрец'], ['🐲', 'Дракон'], ['👑', 'Император'],
-    ['🌙', 'Луна'], ['☀️', 'Солнце'], ['🌍', 'Земля'], ['⭐', 'Звезда'], ['🌌', 'Галактика'], ['♾️', 'Вселенная']
-  ];
-  const MAXT = TIERS.length;
+  // Линии существ: [файл, название, число стадий]. Уровень 1–20 раскладывается по стадиям линии.
+  const LINES = [['slime', 'Слизень', 6], ['plant', 'Росток', 6], ['fish', 'Рыба', 6], ['snail', 'Улитка', 5], ['robot', 'Робот', 6],
+    ['golem', 'Голем', 5], ['mushroom', 'Гриб', 5], ['cat', 'Кот', 5], ['crow', 'Ворон', 6], ['skeleton', 'Скелет', 5]];
+  const MAXT = 20;
+  const stageOf = (li, t) => Math.min(LINES[li][2] - 1, Math.floor((t - 1) * LINES[li][2] / MAXT));
+  const spriteSrc = (li, t) => `img/evo/${LINES[li][0]}-${stageOf(li, t)}.webp`;
+  const sprite = (li, t, cls = '') => h('img.evo-sprite' + cls, { src: spriteSrc(li, t), alt: LINES[li][1], draggable: false });
+  const keyText = k => (HZ.isKey(k) ? k.slice(2) : k);
+  function say(e, k) { if (e.sound === false || !k) return; const en = HZ.entry(k); if (en) ui.speak(en.ch); }
   const COLS = 4;
   const MAST_MAX = 5;
   const OFFLINE_CAP = 8 * 3600; // сек
@@ -36,16 +39,19 @@
     let e = store.s.evo;
     if (!e || typeof e !== 'object') e = store.s.evo = {};
     const d = { coins: 60, slots: 12, tiles: [], chars: [], maxTier: 1, spawned: 0, merges: 0, answered: 0, right: 0, bestCombo: 0,
-      mast: {}, ups: { inc: 0, disc: 0, slots: 0, off: 0 }, src: 'c:hsk1', last: Date.now(), upd: 0 };
+      mast: {}, ups: { inc: 0, disc: 0, slots: 0, off: 0 }, src: 'c:hsk1', sound: true, sp: [], last: Date.now(), upd: 0 };
     Object.keys(d).forEach(k => { if (e[k] === undefined) e[k] = d[k]; });
     e.ups = Object.assign({}, d.ups, e.ups);
     const n = COLS * Math.ceil((12 + 4 * e.ups.slots) / COLS);
     e.slots = n;
+    if (!Array.isArray(e.sp)) e.sp = [];
     while (e.tiles.length < n) { e.tiles.push(0); e.chars.push(null); }
-    e.tiles.length = n; e.chars.length = n;
+    while (e.sp.length < n) e.sp.push(null);
+    e.tiles.length = n; e.chars.length = n; e.sp.length = n;
     return e;
   }
   const E = () => init();
+  function lineOf(e, i) { if (e.sp[i] == null) e.sp[i] = HZ.hash(String(e.chars[i]) + i) % LINES.length; return e.sp[i]; }
   const touch = () => { store.s.evo.upd = Date.now(); store.save(); };
 
   /* ====== Расчёты ====== */
@@ -102,7 +108,7 @@
     const root = document.getElementById('view');
     const area = h('div.page.evo');
     ui.clear(root).append(area);
-    T = { area, sel: -1, combo: 0, session: { right: 0, wrong: 0 }, el: {}, cells: [], t0: Date.now(), xpAcc: 0 };
+    T = { area, sel: -1, info: -1, combo: 0, session: { right: 0, wrong: 0 }, el: {}, cells: [], t0: Date.now(), xpAcc: 0 };
 
     // офлайн-доход
     const away = Math.min(OFFLINE_CAP, Math.max(0, (Date.now() - (e.last || Date.now())) / 1000));
@@ -117,19 +123,23 @@
     T.el.merge = h('button.btn.lg', { type: 'button', onclick: autoMerge, title: 'Слить любую пару одинаковых существ' }, '✨ Слить пару');
     T.el.srcBtn = h('button.btn.sm', { type: 'button', onclick: pickSource });
     T.el.board = h('div.evo-board');
+    T.el.wrap = h('div.evo-wrap', T.el.board);
+    T.el.info = h('div.evo-info');
+    T.el.snd = h('button.btn.sm', { type: 'button', onclick: () => { const e2 = E(); e2.sound = e2.sound === false; touch(); refresh(); if (e2.sound) say(e2, e2.chars[T.info]); } });
     T.el.ups = h('div.evo-ups');
-    T.el.ladder = h('div.evo-ladder');
+    T.el.ladder = h('div.evo-bestiary');
 
     area.append(
       h('div.evo-top',
         h('div', h('div.evo-coin-row', h('span.evo-coin', '🪙'), T.el.coins), T.el.inc),
         T.el.combo),
-      h('div.evo-src', h('span.muted', 'Вопросы по: '), T.el.srcBtn),
-      T.el.board,
+      h('div.evo-src', h('span.muted', 'Вопросы по: '), T.el.srcBtn, T.el.snd),
+      T.el.wrap,
+      T.el.info,
       h('div.evo-actions', T.el.spawn, T.el.merge),
-      h('p.muted.small.center', 'Ответьте верно — появится существо. Два одинаковых сливаются в следующий вид. Знак на существе: чем лучше его знаете (точки), тем больше дохода.'),
+      h('p.muted.small.center', 'Ответьте верно — появится существо с иероглифом. Коснитесь существа — увидите карточку и услышите звучание. Два одинаковых сливаются в следующее, и оно получает новый иероглиф. Чем лучше знаете знак (точки), тем больше дохода.'),
       h('div.panel', h('h3', 'Улучшения'), T.el.ups),
-      h('div.panel', h('h3', 'Эволюционная лестница'), T.el.ladder));
+      h('div.panel', h('h3', 'Бестиарий'), h('p.muted.small', 'Стадии существ открываются по мере роста уровня эволюции.'), T.el.ladder));
 
     buildBoard(); drawUps(); drawLadder(); refresh();
     if (offGain > 1) ui.toast(`🌙 Пока вас не было, существа принесли ${fmt(offGain)} 🪙`, 'gold', 4500);
@@ -173,8 +183,8 @@
     const t = e.tiles[i];
     if (!t) return null;
     const ch = e.chars[i], m = e.mast[ch] || 0, label = ch ? (HZ.isKey(ch) ? ch.slice(2) : ch) : '';
-    return h('div.evo-tile.t' + Math.min(t, 20) + (T.sel === i ? '.sel' : ''),
-      h('span.evo-ico', TIERS[t - 1][0]),
+    return h('div.evo-tile.t' + Math.min(t, 20) + (T.sel === i ? '.sel' : '') + (T.info === i ? '.info' : ''),
+      sprite(lineOf(e, i), t),
       h('span.evo-lv', String(t)),
       ch ? h('span.evo-ch.zh' + (label.length > 2 ? '.long' : ''), label) : null,
       h('span.evo-mast', Array.from({ length: MAST_MAX }, (_, k) => h('i' + (k < m ? '.on' : '')))));
@@ -185,7 +195,36 @@
       ui.clear(c); c.classList.toggle('empty', !e.tiles[i]);
       const n = tileNode(e, i); if (n) c.appendChild(n);
     });
+    drawInfo();
   }
+
+  /* Карточка выбранного существа: иероглиф, чтение, значение, пример, озвучка */
+  function drawInfo() {
+    const e = E();
+    if (!T || !T.el.info) return;
+    ui.clear(T.el.info);
+    const i = T.info, k = i >= 0 ? e.chars[i] : null, en = k ? HZ.entry(k) : null;
+    if (!en || !e.tiles[i]) { T.el.info.append(h('p.muted.small.center', 'Коснитесь существа, чтобы увидеть его иероглиф')); return; }
+    const m = e.mast[k] || 0, sn = en.sents && en.sents[0];
+    T.el.info.append(h('div.evo-card.pop-in',
+      h('div.evo-card-ch.zh' + (en.ch.length > 2 ? '.long' : ''), { lang: 'zh', onclick: () => say(e, k) }, en.ch),
+      h('div.evo-card-t',
+        h('div.evo-card-py', ui.py(en.py, 'lg'), ' ', h('button.icon-btn.speak', { type: 'button', title: 'Прослушать', 'aria-label': 'Прослушать', onclick: () => ui.speak(en.ch) }, '🔊')),
+        h('div.evo-card-m', en.m),
+        h('div.evo-mast.inline', Array.from({ length: MAST_MAX }, (_, j) => h('i' + (j < m ? '.on' : ''))), h('small.muted', ` знание ${m}/${MAST_MAX} · +${Math.round(m * 20)}% дохода`)),
+        sn ? h('div.evo-card-s', h('span.zh', sn.z), ' ', h('button.icon-btn.speak', { type: 'button', onclick: () => ui.speak(sn.z), 'aria-label': 'Прослушать пример' }, '🔊'), h('div.muted.small', sn.p + ' — ' + sn.m)) : null),
+      h('a.btn.sm', { href: en.isWord ? '#/word/' + encodeURIComponent(en.ch) : '#/char/' + en.ch }, 'Карточка →')));
+  }
+
+  /* Вспышка с новым иероглифом поверх поля */
+  function flash(e, k) {
+    const en = HZ.entry(k);
+    if (!en || !T) return;
+    const f = h('div.evo-flash', h('div.evo-flash-ch.zh', en.ch), h('div', ui.py(en.py, 'lg')), h('div.muted', en.m));
+    T.el.wrap.appendChild(f);
+    setTimeout(() => f.classList.add('out'), 1500); setTimeout(() => f.remove(), 1900);
+  }
+
 
   /* ====== Перетаскивание и клики ====== */
   let drag = null;
@@ -231,7 +270,7 @@
     const e = E();
     if (T.sel === d.i) { T.sel = -1; drawTiles(); return; }
     if (T.sel >= 0 && e.tiles[T.sel] && e.tiles[T.sel] === e.tiles[d.i]) return merge(T.sel, d.i);
-    T.sel = d.i; drawTiles();
+    T.sel = d.i; T.info = d.i; drawTiles(); say(e, e.chars[d.i]);
   }
 
   function moveTo(a, b) {
@@ -239,12 +278,13 @@
     T.sel = -1;
     if (a === b || !e.tiles[a]) return drawTiles();
     if (!e.tiles[b]) { // переместить
-      e.tiles[b] = e.tiles[a]; e.chars[b] = e.chars[a]; e.tiles[a] = 0; e.chars[a] = null;
-      touch(); drawTiles(); return;
+      e.tiles[b] = e.tiles[a]; e.chars[b] = e.chars[a]; e.sp[b] = lineOf(e, a); e.tiles[a] = 0; e.chars[a] = null; e.sp[a] = null;
+      T.info = b; touch(); drawTiles(); return;
     }
     if (e.tiles[a] === e.tiles[b]) return merge(a, b);
-    [e.tiles[a], e.tiles[b]] = [e.tiles[b], e.tiles[a]]; [e.chars[a], e.chars[b]] = [e.chars[b], e.chars[a]];
-    touch(); drawTiles();
+    lineOf(e, a); lineOf(e, b);
+    [e.tiles[a], e.tiles[b]] = [e.tiles[b], e.tiles[a]]; [e.chars[a], e.chars[b]] = [e.chars[b], e.chars[a]]; [e.sp[a], e.sp[b]] = [e.sp[b], e.sp[a]];
+    T.info = b; touch(); drawTiles();
   }
 
   function merge(a, b) {
@@ -252,19 +292,22 @@
     T.sel = -1;
     const t = e.tiles[a];
     if (a === b || !t || t !== e.tiles[b]) return drawTiles();
-    if (t >= MAXT) { ui.toast('♾️ Это высшая ступень эволюции'); return drawTiles(); }
-    // знак сохраняется тот, который помните лучше
-    const ca = e.chars[a], cb = e.chars[b];
-    const keep = (e.mast[cb] || 0) > (e.mast[ca] || 0) ? cb : ca;
-    e.tiles[a] = 0; e.chars[a] = null;
-    e.tiles[b] = t + 1; e.chars[b] = keep;
+    if (t >= MAXT) { ui.toast('Это высшая ступень эволюции'); return drawTiles(); }
+    // результат слияния получает НОВЫЙ иероглиф из выбранной подборки
+    const li = lineOf(e, b);
+    const { entry } = nextEntry(e);
+    const nk = entry.key || entry.ch;
+    e.tiles[a] = 0; e.chars[a] = null; e.sp[a] = null;
+    e.tiles[b] = t + 1; e.chars[b] = nk; e.sp[b] = li;
     e.merges++;
     ui.sfx('ok');
     let newTier = false;
     if (t + 1 > e.maxTier) { e.maxTier = t + 1; newTier = true; }
+    T.info = b;
     touch(); drawTiles(); drawLadder(); refresh();
     const node = T.cells[b].firstChild; if (node) node.classList.add('merged');
-    if (newTier) evolved(t + 1, keep);
+    if (newTier) evolved(t + 1, nk, li); else { flash(e, nk); }
+    say(e, nk);
   }
 
   function autoMerge() {
@@ -275,7 +318,7 @@
     merge(by[t][0], by[t][1]);
   }
 
-  function evolved(t, ch) {
+  function evolved(t, ch, li) {
     const e = E();
     const xp = 5 * t;
     HZ.gami.addXP(xp);
@@ -283,10 +326,10 @@
     if (t >= MAXT) HZ.gami.flag('evoMax');
     if (t >= 5) HZ.gami.flag('evo5');
     const en = ch ? HZ.entry(ch) : null;
-    ui.modal(`${TIERS[t - 1][0]} Новый вид: ${TIERS[t - 1][1]}!`, h('div.center',
-      h('div.evo-big', TIERS[t - 1][0]),
-      h('p', `Доход вида: ${fmt(tierInc(t))} 🪙/с · +${xp} XP`),
-      en ? h('div.evo-recall', h('p.muted.small', 'Это существо хранит знак:'), h('div.big-char.lg', { lang: 'zh' }, en.ch), h('div', ui.py(en.py), ' · ', en.m)) : null),
+    ui.modal(`Уровень эволюции ${t}!`, h('div.center',
+      h('div.evo-big', sprite(li, t)),
+      h('p', `${LINES[li][1]} · доход уровня: ${fmt(tierInc(t))} 🪙/с · +${xp} XP`),
+      en ? h('div.evo-recall', h('p.muted.small', 'Новый иероглиф существа:'), h('div.big-char.lg', { lang: 'zh' }, en.ch), h('div', ui.py(en.py), ' ', h('button.icon-btn.speak', { type: 'button', onclick: () => ui.speak(en.ch), 'aria-label': 'Прослушать' }, '🔊'), ' · ', en.m)) : null),
       [{ label: 'Дальше', primary: true }]);
   }
 
@@ -310,7 +353,7 @@
     });
     const tierSpawn = spawnTier(e);
     body.append(h('div.q-card.pop-in', h('div.q-prompt', q.prompt), h('p.muted.center', q.sub)), opt,
-      h('p.muted.small.center', `Награда: ${TIERS[tierSpawn - 1][0]} ${TIERS[tierSpawn - 1][1]}` + (T.combo >= 5 ? ` (бонус серии ×${T.combo})` : '')));
+      h('p.muted.small.center', `Награда: существо уровня ${tierSpawn}` + (T.combo >= 5 ? ` (бонус серии ×${T.combo})` : '')));
     let closeFn = null;
     const onKey = ev => { if (!document.getElementById('modal').classList.contains('open')) return document.removeEventListener('keydown', onKey); if (/^[1-4]$/.test(ev.key) && !locked) { const b = opt.children[+ev.key - 1]; if (b) b.click(); } };
     document.addEventListener('keydown', onKey);
@@ -334,11 +377,11 @@
         const c2 = spawnCost(e);
         e.coins = Math.max(0, e.coins - c2);
         const at = e.tiles.indexOf(0), tr = spawnTier(e);
-        if (at >= 0) { e.tiles[at] = tr; e.chars[at] = key; e.spawned++; if (tr > e.maxTier) e.maxTier = tr; }
+        if (at >= 0) { e.tiles[at] = tr; e.chars[at] = key; e.sp[at] = HZ.rand(LINES.length); e.spawned++; if (tr > e.maxTier) e.maxTier = tr; T.info = at; }
         e.coins += income(e) * 4; // небольшой бонус за верный ответ
         touch(); drawTiles(); drawLadder(); refresh();
         const n = T.cells[at] && T.cells[at].firstChild; if (n) n.classList.add('merged');
-        setTimeout(done, 550);
+        setTimeout(() => { done(); say(e, key); }, 550);
       } else {
         btn.classList.add('wrong'); ui.sfx('bad');
         T.session.wrong++; T.combo = 0;
@@ -379,11 +422,12 @@
   function drawLadder() {
     const e = E();
     ui.clear(T.el.ladder);
-    T.el.ladder.append(...TIERS.map(([ico, name], i) => {
-      const known = i + 1 <= e.maxTier;
-      return h('div.evo-step' + (known ? '' : '.locked'), { title: known ? `${name} — ${fmt(tierInc(i + 1))} 🪙/с` : 'Ещё не открыто' },
-        h('span.evo-ico', known ? ico : '❔'), h('small', known ? name : '???'));
-    }));
+    T.el.ladder.append(...LINES.map(([, name, S], li) => h('div.evo-line', h('b', name),
+      h('div.evo-stages', Array.from({ length: S }, (_, st) => {
+        const first = Math.floor(st * MAXT / S) + 1, known = first <= e.maxTier;
+        return h('div.evo-step' + (known ? '' : '.locked'), { title: known ? `${name}, с уровня ${first}` : 'Откроется на уровне ' + first },
+          sprite(li, first), h('small', 'ур. ' + first));
+      })))));
   }
 
   function refresh(quiet) {
@@ -397,6 +441,7 @@
     T.el.combo.textContent = T.combo >= 2 ? `🔥 Серия ×${T.combo}${T.combo >= 5 ? ' · бонус к виду' : ''}` : `✔ ${e.right}/${e.answered}`;
     T.el.combo.classList.toggle('hot', T.combo >= 2);
     T.el.srcBtn.textContent = '📚 ' + srcName(e.src) + ' ▾';
+    T.el.snd.textContent = e.sound === false ? '🔇 Звук выкл' : '🔊 Звук вкл';
     if (T.el.upBtns) Object.keys(UPS).forEach(k => { const u = UPS[k]; T.el.upBtns[k].classList.toggle('afford', e.ups[k] < u.max && e.coins >= u.cost(e.ups[k])); });
   }
 
@@ -416,5 +461,5 @@
     ui.modal('Что учим в Эволюции?', h('div', h('p.muted.small', 'Вопросы берутся из выбранной подборки. Хотите учить свои — создайте подборку в разделе «Подборки».'), body), [{ label: 'Закрыть' }]);
   }
 
-  HZ.evo = { view, TIERS, tierInc, fmt, init, income, spawnCost };
+  HZ.evo = { view, LINES, tierInc, fmt, init, income, spawnCost };
 })();
