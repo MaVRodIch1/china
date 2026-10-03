@@ -134,10 +134,11 @@
   }
   if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
   /** Озвучка: сначала файл (если задан в данных), затем голос системы (zh-CN). */
+  let noVoiceAt = 0;
   function speak(text, url) {
     if (url) { new Audio(url).play().catch(() => { }); return true; }
     if (!('speechSynthesis' in window)) { toast('Озвучка не поддерживается этим браузером', 'warn'); return false; }
-    if (!pickVoice()) { toast('В системе нет китайского голоса — установите его в настройках ОС', 'warn', 4000); }
+    if (!pickVoice() && Date.now() - noVoiceAt > 30000) { noVoiceAt = Date.now(); toast('В системе нет китайского голоса — установите его в настройках ОС', 'warn', 4000); }
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'zh-CN'; u.rate = HZ.store.s.settings.rate || .8;

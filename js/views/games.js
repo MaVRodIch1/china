@@ -104,11 +104,11 @@
       if (idx >= total || (opts.lives && wrong >= opts.lives)) return finish();
       const e = order[idx % order.length];
       const type = opts.types[HZ.rand(opts.types.length)];
-      const q = makeQuestion(e, type, e.isWord ? HZ.words : all);
+      const q = opts.makeQ ? opts.makeQ(e) : makeQuestion(e, type, e.isWord ? HZ.words : all);
       locked = false; qStart = Date.now();
       drawHud();
       ui.clear(body);
-      const opt = h('div.options' + (q.big ? '.big' : ''));
+      const opt = h('div.options' + (q.big ? '.big' : '') + (q.one ? '.one' : ''));
       q.options.forEach((o, i) => {
         const b = h('button.opt', { type: 'button', dataset: { k: o.key }, onclick: () => pick(b, o, q, e) }, h('kbd', String(i + 1)), h('span' + (q.big ? '.zh' : ''), o.label));
         opt.appendChild(b);
@@ -133,7 +133,7 @@
       }
       drawHud();
       const delay = ok ? (opts.kind === 'speed' ? 280 : 650) : (opts.kind === 'speed' ? 800 : 1500);
-      if (!ok && opts.kind !== 'speed') body.append(h('div.reveal', ui.py(e.py, 'lg'), ' · ', e.m));
+      if (!ok && opts.kind !== 'speed') body.append(h('div.reveal', q.reveal || [ui.py(e.py, 'lg'), ' · ', e.m]));
       idx++;
       setTimeout(() => { if (document.body.contains(area)) nextQ(); }, delay);
     }
@@ -278,7 +278,6 @@
     const view = document.getElementById('view');
     const hard = srs.hardList().map(ch => HZ.byChar[ch]);
     const games = [
-      { ico: '🧬', name: 'Эволюция', desc: 'Idle-игра: отвечай, призывай существ и сливай их. Учит иероглифы из выбранной подборки', go: () => HZ.router.go('#/evo') },
       { ico: '❓', name: 'Викторина', desc: '10 вопросов: значение, пиньинь, иероглиф', go: () => runQuiz({ title: 'Викторина', types: ['zh2ru', 'ru2zh', 'zh2py', 'comp2zh'], pool: learnedPool(), count: 10, kind: 'quiz' }) },
       { ico: '⚡', name: 'Скорость', desc: '60 секунд: сколько иероглифов узнаете? Рекорд: ' + (store.s.best.speed || 0), go: () => runQuiz({ title: 'Скорость', types: ['zh2ru', 'zh2py'], pool: learnedPool(), time: 60, count: 9999, kind: 'speed' }) },
       { ico: '🔗', name: 'Сопоставление', desc: 'Иероглиф · пиньинь · перевод — собери тройки', go: () => runMatch(learnedPool()) },
@@ -289,10 +288,22 @@
       { ico: '🎯', name: 'Тренировка сложных', desc: hard.length >= 4 ? `${hard.length} иероглифов, которые вы забываете` : 'Появится, когда накопятся ошибки (нужно от 4)', disabled: hard.length < 4, go: () => runQuiz({ title: 'Сложные', types: ['zh2ru', 'ru2zh', 'zh2py', 'comp2zh'], pool: hard, count: Math.min(12, hard.length * 2), kind: 'quiz' }) },
       { ico: '🎓', name: 'Тест уровня', desc: 'Отметьте уже известные иероглифы и подберите темп', go: placement }
     ];
+    games.forEach(g => { g.group = g.group || 'Классика'; });
+    const evo = { group: 'Эволюция', ico: '🧬', name: 'Эволюция', desc: 'Idle-игра: отвечай, призывай существ и сливай их. Учит иероглифы из выбранной подборки', go: () => HZ.router.go('#/evo') };
+    const all = [evo, ...(HZ.games.extra || []), ...games];
+    const order = ['Эволюция', 'Предложения', 'Аркады', 'Классика'];
+    const lvl = h('select.input', { onchange: () => { store.s.settings.sentLvl = lvl.value; store.save(); hub(); } },
+      Object.keys(HZ.games.sentLevels || {}).map(k => h('option', { value: k }, HZ.games.sentLevels[k])));
+    lvl.value = store.s.settings.sentLvl || '1';
     ui.clear(view).append(h('div.page',
       h('h1', 'Игры'), h('p.muted', 'Играйте, чтобы закреплять иероглифы. Каждая игра приносит XP и помогает находить слабые места.'),
-      h('div.game-grid', games.map(g => h('button.game-card' + (g.disabled ? '.disabled' : ''), { type: 'button', onclick: () => { if (g.disabled) return ui.toast(g.desc); g.go(); } },
-        h('div.ico', g.ico), h('b', g.name), h('span.muted', g.desc))))));
+      order.map(grp => {
+        const list = all.filter(g => g.group === grp);
+        if (!list.length) return null;
+        return h('section', h('div.game-sec-head', h('h2', grp), grp === 'Предложения' ? h('label.sent-lvl', h('span.muted.small', 'Уровень предложений: '), lvl) : null),
+          h('div.game-grid', list.map(g => h('button.game-card' + (g.disabled ? '.disabled' : ''), { type: 'button', onclick: () => { if (g.disabled) return ui.toast(g.desc); g.go(); } },
+            h('div.ico', g.ico), h('b', g.name), h('span.muted', g.desc)))));
+      })));
   }
 
   HZ.games = { hub, runQuiz, runMatch, placement };
