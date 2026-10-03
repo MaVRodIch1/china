@@ -358,7 +358,12 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .wk-slots { display: grid; gap: .4rem; padding: .6rem .7rem; border-radius: 14px; border: 1px dashed var(--accent); background: var(--surface); }
 .wk-eqrow { display: flex; flex-wrap: wrap; gap: .35rem; min-height: 48px; } .wk-eqi { padding: 2px; border-radius: 10px; border: 2px solid var(--accent); background: var(--surface2); cursor: pointer; line-height: 0; } .wk-eqi:hover { border-color: var(--bad); }
 .wk-eqi .wk-wimg { width: 40px; height: 40px; } .wk-eqi .wk-wico { width: 40px; line-height: 40px; font-size: 1.6rem; }
-@media (max-width: 640px) { .wk-ar { grid-template-columns: auto 1fr; } .wk-ar-b { grid-column: 1 / -1; flex-direction: row; justify-content: flex-end; } }
+.wk-eqi { position: relative; } .wk-eqi:not(.empty)::after { content: '✕'; position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%; background: var(--bad); color: #fff; font-size: 10px; line-height: 16px; text-align: center; }
+.wk-eqi.empty { display: inline-grid; place-items: center; width: 44px; height: 44px; border-style: dashed; border-color: var(--line); color: var(--muted); font-size: 1.2rem; cursor: default; line-height: 1; }
+.wk-swap { display: grid; gap: .45rem; } .wk-swap-b { width: 100%; text-align: left; font: inherit; color: var(--text); cursor: pointer; } .wk-swap-b:hover { border-color: var(--accent); background: var(--accent-soft); }
+.wk-pick { display: grid; gap: .6rem; }
+.wk-ninja { grid-template-columns: auto 1fr; display: grid; align-items: center; justify-items: start; text-align: left; gap: .8rem; padding: .5rem .8rem; } .wk-ninja img { width: 84px; height: 120px; object-fit: contain; } .wk-ninja span { display: grid; gap: .2rem; } .wk-ninja b { font-size: 1.1rem; }
+@media (max-width: 640px) { .wk-ar { grid-template-columns: auto 1fr; } .wk-ar-b { grid-column: 1 / -1; flex-direction: row; justify-content: flex-end; } .wk-ar.wk-swap-b { grid-template-columns: auto 1fr auto; } }
 .wk-locs { display: grid; gap: .5rem; }
 .wk-loc { display: grid; grid-template-columns: auto 1fr auto; gap: .8rem; align-items: center; text-align: left; padding: .7rem .9rem; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
 .wk-loc.on { border-color: var(--accent); background: var(--accent-soft); } .wk-loc.locked { opacity: .55; cursor: not-allowed; } .wk-loc-ico { font-size: 2rem; } .wk-loc-t { display: grid; }
