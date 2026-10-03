@@ -346,3 +346,8 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .py-prev { min-height: 1.3em; font-size: .9rem; } .warn-text { color: var(--bad); }
 .ex-list { display: grid; gap: .4rem; } .ex-row { display: flex; justify-content: space-between; gap: .6rem; align-items: center; padding: .45rem .6rem; border-radius: 10px; background: var(--surface2); } .ex-row .zh { font-size: 1.1rem; font-weight: 600; } .ex-head { font-size: 1.05rem; }
 @media (max-width: 800px) { .cw-row { grid-template-columns: auto 1fr; } .cw-btns { grid-column: 1 / -1; justify-content: flex-start; } .aw-grid { grid-template-columns: 1fr; } }
+.wk-tabs { display: flex; gap: .4rem; flex-wrap: wrap; }
+.wk-locs { display: grid; gap: .5rem; }
+.wk-loc { display: grid; grid-template-columns: auto 1fr auto; gap: .8rem; align-items: center; text-align: left; padding: .7rem .9rem; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+.wk-loc.on { border-color: var(--accent); background: var(--accent-soft); } .wk-loc.locked { opacity: .55; cursor: not-allowed; } .wk-loc-ico { font-size: 2rem; } .wk-loc-t { display: grid; }
+@media (max-width: 640px) { .wk-locpill { display: none; } .wk-coins { font-size: 1.5rem; } .wk-bar .btn.sm { padding: .3rem .55rem; } .wk-src .input { max-width: 150px; } .wk-banner { min-height: 2.2em; padding: .35rem .7rem; font-size: .95rem; } .wk-target { font-size: 1.25rem; } .walk > p.small { display: none; } }
