@@ -36,7 +36,7 @@
     if (BANK) return BANK;
     const seen = new Set(); BANK = [];
     const add = (z, p, m, key) => { if (!z || seen.has(z)) return; const s = build(z, p, m, key); if (s) { seen.add(z); BANK.push(s); } };
-    HZ.words.forEach(w => w.sents.forEach(s => add(s.z, s.p, s.m, w.key)));
+    HZ.words.forEach(w => [...(w.my || []), ...w.sents].forEach(s => add(s.z, s.p, s.m, w.key)));
     HZ.chars.forEach(c => c.sents.forEach(s => add(s.z, s.p, s.m, c.ch)));
     return BANK;
   }
@@ -47,8 +47,8 @@
     let list = bank().filter(s => s.tokens.length >= minTok && s.tokens.length <= maxTok);
     const col = G.gameCol();
     if (col) { // предложения, где есть слово или иероглиф выбранной подборки
-      const set = new Set(col.chars);
-      const mine = list.filter(s => s.tokens.some(t => t.e && (t.e.isWord ? t.e.chars.length && t.e.chars.every(c => set.has(c)) : set.has(t.w))));
+      const set = new Set(col.chars), wset = new Set(col.words || []);
+      const mine = list.filter(s => wset.has(s.key) || s.tokens.some(t => t.e && (t.e.isWord ? wset.has(t.e.key) || (t.e.chars.length && t.e.chars.every(c => set.has(c))) : set.has(t.w))));
       if (mine.length >= 8) return mine;
       const some = list.filter(s => s.tokens.some(t => [...t.w].some(c => set.has(c))));
       if (some.length >= 8) return some;
@@ -414,5 +414,5 @@
   G.sentLevels = LV;
   G.mixPool = mixPool; G.summary = summary; G.frame = frame;
   G.sentPoolSize = () => sentPool().length;
-  HZ.sentences = { bank, build, sentPool };
+  HZ.sentences = { bank, build, sentPool, reset() { BANK = null; } };
 })();

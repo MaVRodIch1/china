@@ -31,8 +31,9 @@
       const col = HZ.getCollection(arg);
       title = col ? col.name : 'Подборка';
       if (!col) return HZ.router.go('#/collections');
-      const fresh = col.chars.filter(srs.isNew).slice(0, Math.max(0, srs.newBudget()));
-      const known = col.chars.filter(c => !srs.isNew(c));
+      const ws = col.words || [];
+      const fresh = [...col.chars.filter(srs.isNew).slice(0, Math.max(0, srs.newBudget())), ...ws.filter(srs.isNew).slice(0, 10)];
+      const known = [...col.chars, ...ws].filter(c => !srs.isNew(c));
       cram = true;
       queue = [...fresh.map(ch => ({ ch, kind: 'intro' })), ...HZ.shuffle(known).slice(0, 30).map(ch => ({ ch, kind: 'rev' }))];
     }

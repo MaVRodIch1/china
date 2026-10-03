@@ -28,7 +28,7 @@
     (b.collections || []).forEach(c => {
       const x = out.collections.find(k => k.id === c.id);
       if (!x) out.collections.push(c);
-      else c.chars.forEach(ch => { if (!x.chars.includes(ch)) x.chars.push(ch); });
+      else { c.chars.forEach(ch => { if (!x.chars.includes(ch)) x.chars.push(ch); }); (c.words || []).forEach(k => { x.words = x.words || []; if (!x.words.includes(k)) x.words.push(k); }); }
     });
     out.xp = Math.max(a.xp || 0, b.xp || 0);
     out.ach = Object.assign({}, b.ach, a.ach);
@@ -44,6 +44,8 @@
     out.best = Object.assign({}, b.best);
     Object.keys(a.best || {}).forEach(k => { out.best[k] = Math.max(a.best[k] || 0, (b.best || {})[k] || 0); });
     out.flags = Object.assign({}, b.flags, a.flags);
+    out.myWords = Object.assign({}, a.myWords);
+    Object.keys(b.myWords || {}).forEach(k => { const x = out.myWords[k], y = b.myWords[k]; if (!x || (y.t || 0) > (x.t || 0)) out.myWords[k] = y; });
     out.texts = Object.assign({}, b.texts);
     Object.keys(a.texts || {}).forEach(id => { const x = a.texts[id], y = (b.texts || {})[id]; out.texts[id] = y ? { done: Math.min(x.done, y.done), best: Math.max(x.best, y.best), n: Math.max(x.n, y.n) } : x; });
     if (b.walk && (!a.walk || (b.walk.upd || 0) > (a.walk.upd || 0))) out.walk = b.walk; // «Долина знаков»: побеждает более свежее состояние
@@ -68,6 +70,7 @@
       const merged = merge(store.s, data.data);
       merged.settings = store.s.settings; // настройки устройства остаются локальными
       store.replace(merged);
+      if (HZ.applyMyWords) HZ.applyMyWords();
     }
   }
   async function push() {

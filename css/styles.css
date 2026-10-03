@@ -333,3 +333,16 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .wk-pad { display: none; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-top: .6rem; } .wk-pad .btn { font-size: 1.4rem; }
 .wk-heroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: .5rem; } .wk-hero { display: grid; justify-items: center; gap: .1rem; padding: .4rem; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; } .wk-hero.on { border-color: var(--accent); background: var(--accent-soft); } .wk-hero .evo-sprite { width: 64px; height: 64px; }
 @media (max-width: 800px), (pointer: coarse) { .wk-pad { display: grid; } }
+
+/* Слова в подборках, свои примеры */
+.cw-list { display: grid; gap: .5rem; margin-bottom: 1rem; }
+.cw-row { display: grid; grid-template-columns: auto 1fr auto; gap: .8rem; align-items: center; padding: .6rem .8rem; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
+.cw-w { font-size: 1.8rem; font-weight: 700; min-width: 2.2em; } .cw-main { min-width: 0; display: grid; gap: .1rem; } .cw-m { font-weight: 600; } .cw-ex { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cw-btns { display: flex; gap: .3rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.w100 { width: 100%; margin: 0; } .empty-col { padding: 1rem; border: 2px dashed var(--line); border-radius: 16px; margin-top: 1rem; }
+.aw-dialog, .ex-dialog { display: grid; gap: .5rem; } .aw-prev { display: grid; gap: .4rem; max-height: 46vh; overflow: auto; }
+.aw-row { padding: .45rem .6rem; border-radius: 10px; background: var(--surface2); } .aw-row.ok { background: var(--ok-soft); } .aw-row.bad { opacity: .6; } .aw-row.new { background: var(--gold-soft); display: grid; gap: .35rem; }
+.aw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; } .input.err { border-color: var(--bad); }
+.py-prev { min-height: 1.3em; font-size: .9rem; } .warn-text { color: var(--bad); }
+.ex-list { display: grid; gap: .4rem; } .ex-row { display: flex; justify-content: space-between; gap: .6rem; align-items: center; padding: .45rem .6rem; border-radius: 10px; background: var(--surface2); } .ex-row .zh { font-size: 1.1rem; font-weight: 600; } .ex-head { font-size: 1.05rem; }
+@media (max-width: 800px) { .cw-row { grid-template-columns: auto 1fr; } .cw-btns { grid-column: 1 / -1; justify-content: flex-start; } .aw-grid { grid-template-columns: 1fr; } }

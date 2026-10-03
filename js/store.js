@@ -19,7 +19,8 @@
     best: {},          // рекорды игр
     evo: null,         // состояние игры «Эволюция»
     texts: {},         // прочитанные тексты: id -> {done, best, n}
-    walk: null         // «Долина знаков»
+    walk: null,        // «Долина знаков»
+    myWords: {}        // свои слова и примеры: 'w:слово' -> {w, py, m, custom, ex:[{id,z,p,m}], t}
   });
 
   let state;
@@ -65,6 +66,7 @@
       if (!d || typeof d !== 'object' || !d.cards || !d.settings) throw new Error('Неверный формат файла');
       state = Object.assign(defaults(), d, { settings: Object.assign(defaults().settings, d.settings) });
       flush();
+      if (HZ.applyMyWords) HZ.applyMyWords();
     },
     reset() { state = defaults(); flush(); }
   };

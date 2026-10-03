@@ -90,8 +90,51 @@
   }
 
   function user() {
-    return store.s.collections.map(c => ({ id: c.id, name: c.name, desc: 'Моя подборка', group: 'Мои подборки', ico: '⭐', chars: c.chars.filter(ch => HZ.byChar[ch]), user: true }));
+    return store.s.collections.map(c => ({ id: c.id, name: c.name, desc: 'Моя подборка', group: 'Мои подборки', ico: '⭐', chars: c.chars.filter(ch => HZ.byChar[ch]), words: (c.words || []).filter(k => HZ.wordByKey[k]), user: true }));
   }
+
+  /* ---------- Свои слова и примеры ---------- */
+  /** Регистрирует свои слова (которых нет в базе) как обычные слова и прикрепляет свои примеры. Идемпотентно. */
+  function applyMyWords() {
+    const mw = store.s.myWords || (store.s.myWords = {});
+    Object.keys(mw).forEach(k => {
+      const d = mw[k]; if (!d || !d.w) return;
+      let e = HZ.wordByKey[k];
+      if (!e && d.custom) { HZ.addWords([[d.w, d.py || '', d.m || '', 0, '']]); e = HZ.wordByKey[k]; e.custom = true; }
+      if (!e) return;
+      if (e.custom) { e.py = d.py || ''; e.m = d.m || ''; e.tone = HZ.firstTone(e.py); }
+      e.my = (d.ex || []).filter(x => x && x.z);
+    });
+    if (HZ.sentences && HZ.sentences.reset) HZ.sentences.reset();
+  }
+  const myWord = k => store.s.myWords[k] || (store.s.myWords[k] = { w: k.slice(2), ex: [], t: Date.now() });
+  /** Своё слово: w — китайский текст, py — пиньинь (можно цифрами), m — перевод. Возвращает ключ 'w:…'. */
+  function saveWord(w, py, m) {
+    const k = 'w:' + w.trim();
+    const d = myWord(k);
+    if (!HZ.wordByKey[k] || HZ.wordByKey[k].custom) Object.assign(d, { custom: true, py: HZ.pyNum(py || '').trim(), m: (m || '').trim() });
+    d.t = Date.now(); store.save(); applyMyWords();
+    return k;
+  }
+  function deleteWord(k) {
+    const e = HZ.wordByKey[k];
+    if (e && e.custom) { HZ.words.splice(HZ.words.indexOf(e), 1); delete HZ.wordByKey[k]; }
+    delete store.s.myWords[k];
+    store.s.collections.forEach(c => { if (c.words) c.words = c.words.filter(x => x !== k); });
+    store.save(); applyMyWords();
+  }
+  function addExample(k, z, p, m) {
+    const d = myWord(k);
+    d.ex = d.ex || [];
+    d.ex.push({ id: Date.now().toString(36) + HZ.rand(1e4).toString(36), z: z.trim(), p: HZ.pyNum(p || '').trim(), m: (m || '').trim() });
+    d.t = Date.now(); store.save(); applyMyWords();
+  }
+  function removeExample(k, id) {
+    const d = store.s.myWords[k]; if (!d) return;
+    d.ex = (d.ex || []).filter(x => x.id !== id); d.t = Date.now(); store.save(); applyMyWords();
+  }
+  function addWordsTo(id, keys) { const c = raw(id); if (!c) return; c.words = c.words || []; keys.forEach(k => { if (HZ.wordByKey[k] && !c.words.includes(k)) c.words.push(k); }); store.save(); }
+  function removeWordFrom(id, k) { const c = raw(id); if (c) { c.words = (c.words || []).filter(x => x !== k); store.save(); } }
 
   function all() {
     const ext = [];
@@ -102,8 +145,8 @@
 
   /* ---------- Управление пользовательскими ---------- */
   const uid = () => 'u' + Date.now().toString(36) + HZ.rand(1e4).toString(36);
-  function create(name, chars = []) {
-    const c = { id: uid(), name, chars: [...new Set(chars)] };
+  function create(name, chars = [], words = []) {
+    const c = { id: uid(), name, chars: [...new Set(chars)], words: [...new Set(words)] };
     store.s.collections.push(c); store.save();
     HZ.gami.check();
     return c;
@@ -114,11 +157,13 @@
   function addChars(id, chars) { const c = raw(id); if (!c) return; chars.forEach(ch => { if (!c.chars.includes(ch) && HZ.byChar[ch]) c.chars.push(ch); }); store.save(); }
   function removeChar(id, ch) { const c = raw(id); if (c) { c.chars = c.chars.filter(x => x !== ch); store.save(); } }
   function merge(ids, name) {
-    const set = [];
-    ids.forEach(id => { const c = get(id); if (c) c.chars.forEach(ch => { if (!set.includes(ch)) set.push(ch); }); });
-    return create(name, set);
+    const set = [], ws = [];
+    ids.forEach(id => { const c = get(id); if (c) { c.chars.forEach(ch => { if (!set.includes(ch)) set.push(ch); }); (c.words || []).forEach(k => { if (!ws.includes(k)) ws.push(k); }); } });
+    return create(name, set, ws);
   }
 
   HZ.getCollection = get;
-  HZ.collections = { all, get, create, rename, remove, addChars, removeChar, merge, weakTones, weakRadicals, raw };
+  HZ.collections = { all, get, create, rename, remove, addChars, removeChar, merge, weakTones, weakRadicals, raw, addWords: addWordsTo, removeWord: removeWordFrom, saveWord, deleteWord, addExample, removeExample, applyMyWords };
+  HZ.applyMyWords = applyMyWords;
+  applyMyWords();
 })();

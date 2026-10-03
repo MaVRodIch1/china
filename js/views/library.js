@@ -79,10 +79,11 @@
     const keys = [...order.filter(k => groups[k]), ...Object.keys(groups).filter(k => !order.includes(k))];
 
     const card = c => {
-      const learned = c.chars.filter(ch => srs.get(ch)).length;
-      const pct = c.chars.length ? Math.round(learned / c.chars.length * 100) : 0;
-      const body = [h('div.col-ico', c.ico || '📚'), h('b', c.name), h('span.muted.small', `${c.chars.length} ${HZ.plural(c.chars.length, 'иероглиф', 'иероглифа', 'иероглифов')}`),
-        h('div.preview.zh', c.chars.slice(0, 6).join('')), h('div.progress.sm', h('i', { style: { width: pct + '%' } }))];
+      const ws = c.words || [], keys = [...c.chars, ...ws], learned = keys.filter(k => srs.get(k)).length;
+      const pct = keys.length ? Math.round(learned / keys.length * 100) : 0;
+      const label = [c.chars.length || !ws.length ? `${c.chars.length} ${HZ.plural(c.chars.length, 'иероглиф', 'иероглифа', 'иероглифов')}` : '', ws.length ? `${ws.length} ${HZ.plural(ws.length, 'слово', 'слова', 'слов')}` : ''].filter(Boolean).join(' · ');
+      const body = [h('div.col-ico', c.ico || '📚'), h('b', c.name), h('span.muted.small', label),
+        h('div.preview.zh', [...ws.map(k => k.slice(2)), ...c.chars].slice(0, 6).join(' ')), h('div.progress.sm', h('i', { style: { width: pct + '%' } }))];
       if (selectMode && c.user) {
         const on = picked.has(c.id);
         return h('button.col-card' + (on ? '.picked' : ''), { type: 'button', onclick: () => { on ? picked.delete(c.id) : picked.add(c.id); collections(); } }, ...body);
@@ -112,15 +113,18 @@
     const view = document.getElementById('view');
     const c = HZ.collections.get(id);
     if (!c) { HZ.router.go('#/collections'); return; }
-    const fresh = c.chars.filter(srs.isNew).length;
+    const words = (c.words || []).map(k => HZ.wordByKey[k]).filter(Boolean);
+    const all = HZ.games.colEntries(c), n = all.length;
+    const fresh = c.chars.filter(srs.isNew).length + words.filter(w => srs.isNew(w.key)).length;
     const acts = h('div.row.wrap',
-      h('button.btn.primary', { onclick: () => HZ.router.go('#/study/collection/' + c.id), disabled: !c.chars.length }, fresh ? `▶ Учить (${fresh} нов.)` : '▶ Тренировать'),
-      h('button.btn', { disabled: c.chars.length < 4, onclick: () => HZ.games.runQuiz({ title: c.name, types: ['zh2ru', 'ru2zh', 'zh2py'], pool: c.chars.map(x => HZ.byChar[x]), count: 10, kind: 'quiz' }) }, '❓ Викторина'),
-      h('button.btn', { disabled: c.chars.length < 4, onclick: () => { store.s.settings.gameSrc = c.id; store.save(); HZ.router.go('#/games'); } }, '🎯 Все игры с этой подборкой'),
-      h('button.btn', { disabled: c.chars.length < 5, onclick: () => HZ.games.runMatch(c.chars.map(x => HZ.byChar[x])) }, '🔗 Сопоставление'),
+      h('button.btn.primary', { onclick: () => HZ.router.go('#/study/collection/' + c.id), disabled: !n }, fresh ? `▶ Учить (${fresh} нов.)` : '▶ Тренировать'),
+      h('button.btn', { disabled: n < 4, onclick: () => HZ.games.runQuiz({ title: c.name, types: ['zh2ru', 'ru2zh', 'zh2py'], pool: all, count: 10, kind: 'quiz' }) }, '❓ Викторина'),
+      h('button.btn', { disabled: n < 4, onclick: () => { store.s.settings.gameSrc = c.id; store.save(); HZ.router.go('#/games'); } }, '🎯 Все игры с этой подборкой'),
+      h('button.btn', { disabled: n < 5, onclick: () => HZ.games.runMatch(all) }, '🔗 Сопоставление'),
       !c.dynamic ? h('button.btn', { onclick: () => { store.s.settings.newSource = store.s.settings.newSource === c.id ? 'all' : c.id; store.save(); ui.toast(store.s.settings.newSource === c.id ? 'Новые иероглифы берутся из этой подборки' : 'Источник новых: все иероглифы'); collectionPage(id); } },
         store.s.settings.newSource === c.id ? '✓ Источник новых' : '📥 Учить новые отсюда') : null,
-      !c.user ? h('button.btn', { onclick: () => ui.prompt('Копия подборки', 'Название', c.name + ' (моя)', 'Создать копию', n => { const k = HZ.collections.create(n, c.chars); ui.toast('Копия создана — её можно редактировать'); HZ.router.go('#/collection/' + k.id); }) }, '⧉ Копировать для редактирования') : null);
+      !c.user ? h('button.btn', { onclick: () => ui.prompt('Копия подборки', 'Название', c.name + ' (моя)', 'Создать копию', nm => { const k = HZ.collections.create(nm, c.chars, c.words || []); ui.toast('Копия создана — её можно редактировать'); HZ.router.go('#/collection/' + k.id); }) }, '⧉ Копировать для редактирования') : null);
+    if (n < 4 && c.user) acts.append(h('p.muted.small.w100', 'Для игр нужно хотя бы 4 знака или слова — добавьте ещё.'));
     const grid = h('div.tile-grid');
     c.chars.forEach(ch => {
       const e = HZ.byChar[ch]; if (!e) return;
@@ -128,13 +132,28 @@
       if (c.user) { const x = h('button.tile-x', { title: 'Убрать из подборки', onclick: ev => { ev.preventDefault(); ev.stopPropagation(); HZ.collections.removeChar(c.id, ch); collectionPage(id); } }, '✕'); t.appendChild(x); }
       grid.appendChild(t);
     });
-    if (!c.chars.length) grid.append(h('p.muted', 'Подборка пуста.'));
+    const wordList = h('div.cw-list', words.map(w => {
+      const nEx = (w.my || []).length;
+      return h('div.cw-row',
+        h('a.cw-w.zh', { href: '#/word/' + encodeURIComponent(w.ch) }, w.ch),
+        h('div.cw-main', h('div', ui.py(w.py || '—'), ' ', h('span.chip.sm' + (w.custom ? '.new' : ''), w.custom ? 'моё слово' : 'HSK ' + w.h), nEx ? h('span.chip.sm', '💬 ' + nEx) : null),
+          h('div.cw-m', w.m || h('span.muted', 'без перевода')),
+          (w.my || [])[0] ? h('div.cw-ex.muted.small', h('span.zh', w.my[0].z), w.my[0].m ? ' — ' + w.my[0].m : '') : null),
+        h('div.cw-btns', ui.speakBtn(w.ch),
+          h('button.btn.sm', { type: 'button', onclick: () => HZ.wordUI.examples(w.key, () => collectionPage(id)) }, '💬 Примеры'),
+          c.user ? h('button.btn.sm', { type: 'button', title: 'Убрать из подборки', onclick: () => { HZ.collections.removeWord(c.id, w.key); collectionPage(id); } }, '✕') : null));
+    }));
     const manage = c.user ? h('div.row.wrap',
+      h('button.btn.primary', { onclick: () => HZ.wordUI.addWords(c.id, () => collectionPage(id)) }, '＋ Добавить слова'),
       h('button.btn', { onclick: () => addDialog(c) }, '＋ Добавить иероглифы'),
-      h('button.btn', { onclick: () => ui.prompt('Переименовать', 'Название', c.name, 'Сохранить', n => { HZ.collections.rename(c.id, n); collectionPage(id); }) }, '✎ Переименовать'),
-      h('button.btn.danger', { onclick: () => ui.confirmBox('Удалить подборку?', `«${c.name}» будет удалена. Иероглифы и прогресс останутся.`, 'Удалить', () => { HZ.collections.remove(c.id); HZ.router.go('#/collections'); }, true) }, '🗑 Удалить')) : null;
+      h('button.btn', { onclick: () => ui.prompt('Переименовать', 'Название', c.name, 'Сохранить', nm => { HZ.collections.rename(c.id, nm); collectionPage(id); }) }, '✎ Переименовать'),
+      h('button.btn.danger', { onclick: () => ui.confirmBox('Удалить подборку?', `«${c.name}» будет удалена. Иероглифы, слова и прогресс останутся.`, 'Удалить', () => { HZ.collections.remove(c.id); HZ.router.go('#/collections'); }, true) }, '🗑 Удалить')) : null;
+    const cnt = [c.chars.length ? `${c.chars.length} ${HZ.plural(c.chars.length, 'иероглиф', 'иероглифа', 'иероглифов')}` : '', words.length ? `${words.length} ${HZ.plural(words.length, 'слово', 'слова', 'слов')}` : ''].filter(Boolean).join(' · ') || 'пусто';
     ui.clear(view).append(h('div.page', h('a.btn.sm', { href: '#/collections' }, '← Подборки'),
-      h('h1', (c.ico || '') + ' ' + c.name), h('p.muted', c.desc + ` · ${c.chars.length} ${HZ.plural(c.chars.length, 'иероглиф', 'иероглифа', 'иероглифов')}`), acts, manage, grid));
+      h('h1', (c.ico || '') + ' ' + c.name), h('p.muted', c.desc + ' · ' + cnt), acts, manage,
+      words.length ? h('section', h('h3.group-title', 'Слова и фразы'), wordList) : null,
+      c.chars.length ? h('section', h('h3.group-title', 'Иероглифы'), grid) : null,
+      !n ? h('div.empty-col', h('p', 'Подборка пуста.'), c.user ? h('p.muted', 'Нажмите «Добавить слова» и впишите слова или фразы через пробел — например: 你好 朋友 打篮球. Свои слова (которых нет в базе) тоже можно: укажите пиньинь и перевод, а потом добавьте свои примеры.') : null) : null));
   }
 
   function addDialog(c) {
