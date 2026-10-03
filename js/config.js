@@ -3,6 +3,6 @@
  * Оставьте поля пустыми, чтобы приложение работало только локально. */
 window.HZ = window.HZ || {};
 HZ.config = {
-  supabaseUrl: '',      // например: https://abcdxyz.supabase.co
-  supabaseAnonKey: ''   // Project Settings → API → anon public key
+  supabaseUrl: 'https://qfktmemuwzmzrzkvofrv.supabase.co',
+  supabaseAnonKey: 'sb_publishable_DKxUAYKuDo-sxeLWk32CZQ_NMx14-MD' // publishable-ключ (публичный)
 };
