@@ -45,6 +45,14 @@
   function sentPool(minTok = 1, maxTok = 99) {
     const lv = store.s.settings.sentLvl || '1';
     let list = bank().filter(s => s.tokens.length >= minTok && s.tokens.length <= maxTok);
+    const col = G.gameCol();
+    if (col) { // предложения, где есть слово или иероглиф выбранной подборки
+      const set = new Set(col.chars);
+      const mine = list.filter(s => s.tokens.some(t => t.e && (t.e.isWord ? t.e.chars.length && t.e.chars.every(c => set.has(c)) : set.has(t.w))));
+      if (mine.length >= 8) return mine;
+      const some = list.filter(s => s.tokens.some(t => [...t.w].some(c => set.has(c))));
+      if (some.length >= 8) return some;
+    }
     if (lv === 'mine') {
       const mine = list.filter(s => srs.get(s.key) || s.tokens.some(t => t.e && srs.get(t.e.key || t.e.ch)));
       if (mine.length >= 8) return mine;
@@ -175,13 +183,18 @@
 
   /* ====== Пулы ====== */
   function mixPool() {
+    const col = G.gameCol();
+    if (col) {
+      const p = [...G.colEntries(col), ...G.colWords(col)];
+      if (p.length >= 12) return dedupe(p);
+    }
     const c = HZ.chars.filter(x => srs.get(x.ch)), w = HZ.words.filter(x => srs.get(x.key));
     const lvl = +(store.s.settings.sentLvl === 'mine' ? 1 : (store.s.settings.sentLvl || 1));
     let pool = [...c, ...w];
     if (pool.length < 12) pool = [...HZ.chars.filter(x => x.h <= lvl), ...HZ.words.filter(x => x.h <= lvl)];
-    const seen = new Set(); // иероглиф и слово из одного знака не должны дублироваться
-    return pool.filter(e => !seen.has(e.ch) && seen.add(e.ch));
+    return dedupe(pool);
   }
+  function dedupe(pool) { const seen = new Set(); return pool.filter(e => !seen.has(e.ch) && seen.add(e.ch)); } // знак и слово из него не дублируются
 
   /* ====== Собери предложение ====== */
   function runBuilder() {

@@ -92,7 +92,7 @@
         r.go ? h('a.btn.sm', { href: r.go }, r.btn) : h('button.btn.sm', { onclick: r.act }, r.btn))))) : null,
 
       h('section.panel', h('h3', 'Быстрый старт'), h('div.quick',
-        h('a.btn', { href: '#/games' }, '🎮 Игры'), h('a.btn', { href: '#/collections' }, '🗂️ Подборки'), h('a.btn', { href: '#/library' }, '🔎 Все иероглифы'),
+        h('a.btn', { href: '#/games' }, '🎮 Игры'), h('a.btn', { href: '#/texts' }, '📖 Чтение'), h('a.btn', { href: '#/collections' }, '🗂️ Подборки'), h('a.btn', { href: '#/library' }, '🔎 Все иероглифы'),
         hard ? h('a.btn', { href: '#/study/hard' }, '🧩 Сложные · ' + hard) : null))));
   }
 

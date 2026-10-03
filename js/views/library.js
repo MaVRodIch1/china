@@ -116,6 +116,7 @@
     const acts = h('div.row.wrap',
       h('button.btn.primary', { onclick: () => HZ.router.go('#/study/collection/' + c.id), disabled: !c.chars.length }, fresh ? `▶ Учить (${fresh} нов.)` : '▶ Тренировать'),
       h('button.btn', { disabled: c.chars.length < 4, onclick: () => HZ.games.runQuiz({ title: c.name, types: ['zh2ru', 'ru2zh', 'zh2py'], pool: c.chars.map(x => HZ.byChar[x]), count: 10, kind: 'quiz' }) }, '❓ Викторина'),
+      h('button.btn', { disabled: c.chars.length < 4, onclick: () => { store.s.settings.gameSrc = c.id; store.save(); HZ.router.go('#/games'); } }, '🎯 Все игры с этой подборкой'),
       h('button.btn', { disabled: c.chars.length < 5, onclick: () => HZ.games.runMatch(c.chars.map(x => HZ.byChar[x])) }, '🔗 Сопоставление'),
       !c.dynamic ? h('button.btn', { onclick: () => { store.s.settings.newSource = store.s.settings.newSource === c.id ? 'all' : c.id; store.save(); ui.toast(store.s.settings.newSource === c.id ? 'Новые иероглифы берутся из этой подборки' : 'Источник новых: все иероглифы'); collectionPage(id); } },
         store.s.settings.newSource === c.id ? '✓ Источник новых' : '📥 Учить новые отсюда') : null,

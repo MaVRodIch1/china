@@ -32,7 +32,7 @@
   }
 
   function tabs(active) {
-    return h('div.tabs', h('a.tab' + (active === 'chars' ? '.on' : ''), { href: '#/library' }, `Иероглифы · ${HZ.chars.length}`), h('a.tab' + (active === 'words' ? '.on' : ''), { href: '#/words' }, `Слова · ${HZ.words.length}`));
+    return h('div.tabs', h('a.tab' + (active === 'chars' ? '.on' : ''), { href: '#/library' }, `Иероглифы · ${HZ.chars.length}`), h('a.tab' + (active === 'words' ? '.on' : ''), { href: '#/words' }, `Слова · ${HZ.words.length}`), h('a.tab' + (active === 'texts' ? '.on' : ''), { href: '#/texts' }, `Тексты · ${HZ.texts.length}`));
   }
 
   function list() {

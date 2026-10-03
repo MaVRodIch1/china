@@ -69,6 +69,9 @@
       HZ.words.push(e); HZ.wordByKey[key] = e;
     });
   };
+  HZ.texts = [];          // тексты для чтения
+  HZ.addTexts = list => list.forEach(t => HZ.texts.push(t));
+  HZ.textById = id => HZ.texts.find(t => t.id === id);
   HZ.isKey = k => typeof k === 'string' && k.startsWith('w:');
   /** Запись по ключу SRS: иероглиф или слово */
   HZ.entry = k => HZ.isKey(k) ? HZ.wordByKey[k] : HZ.byChar[k];

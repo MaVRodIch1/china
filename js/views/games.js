@@ -270,9 +270,22 @@
   }
 
   /* ====== Хаб игр ====== */
-  const learnedPool = () => { const l = HZ.chars.filter(c => srs.get(c.ch)); return l.length >= 6 ? l : HZ.chars; };
+  /* Выбранная для игр подборка (любая: встроенная, умная, своя). null — «авто». */
+  function gameCol() {
+    const id = store.s.settings.gameSrc;
+    if (!id || id === 'auto') return null;
+    const c = HZ.getCollection(id);
+    return c && c.chars.filter(ch => HZ.byChar[ch]).length >= 4 ? c : null;
+  }
+  const colEntries = c => c.chars.map(ch => HZ.byChar[ch]).filter(Boolean);
+  function colWords(c) { // слова подборки: целиком из её иероглифов, иначе — содержащие хотя бы один
+    const set = new Set(c.chars);
+    const all = HZ.words.filter(w => w.chars.length && w.chars.every(x => set.has(x)));
+    return all.length >= 8 ? all : HZ.words.filter(w => w.chars.some(x => set.has(x)));
+  }
+  const learnedPool = () => { const c = gameCol(); if (c) return colEntries(c); const l = HZ.chars.filter(c => srs.get(c.ch)); return l.length >= 6 ? l : HZ.chars; };
 
-  const wordPool = () => { const l = HZ.words.filter(w => srs.get(w.key)); return l.length >= 8 ? l : HZ.words.slice(0, 80); };
+  const wordPool = () => { const c = gameCol(); if (c) { const w = colWords(c); if (w.length >= 6) return w; } const l = HZ.words.filter(w => srs.get(w.key)); return l.length >= 8 ? l : HZ.words.slice(0, 80); };
 
   function hub() {
     const view = document.getElementById('view');
@@ -282,7 +295,7 @@
       { ico: '⚡', name: 'Скорость', desc: '60 секунд: сколько иероглифов узнаете? Рекорд: ' + (store.s.best.speed || 0), go: () => runQuiz({ title: 'Скорость', types: ['zh2ru', 'zh2py'], pool: learnedPool(), time: 60, count: 9999, kind: 'speed' }) },
       { ico: '🔗', name: 'Сопоставление', desc: 'Иероглиф · пиньинь · перевод — собери тройки', go: () => runMatch(learnedPool()) },
       { ico: '👂', name: 'Аудирование', desc: 'Услышьте слово и найдите иероглиф', go: () => runQuiz({ title: 'Аудирование', types: ['audio2zh'], pool: learnedPool(), count: 10, kind: 'quiz' }) },
-      { ico: '🧩', name: 'Из чего состоит?', desc: 'По частям соберите иероглиф', go: () => runQuiz({ title: 'Из чего состоит?', types: ['comp2zh'], pool: HZ.chars.filter(c => c.comps.length >= 2), count: 10, kind: 'quiz', lives: 3 }) },
+      { ico: '🧩', name: 'Из чего состоит?', desc: 'По частям соберите иероглиф', go: () => runQuiz({ title: 'Из чего состоит?', types: ['comp2zh'], pool: (() => { const p = learnedPool().filter(c => c.comps.length >= 2); return p.length >= 4 ? p : HZ.chars.filter(c => c.comps.length >= 2); })(), count: 10, kind: 'quiz', lives: 3 }) },
       { ico: '📘', name: 'Слова: викторина', desc: 'Значение, пиньинь и слово — по словам HSK', go: () => runQuiz({ title: 'Слова', types: ['zh2ru', 'ru2zh', 'zh2py'], pool: wordPool(), count: 10, kind: 'quiz' }) },
       { ico: '🔗', name: 'Слова: сопоставление', desc: 'Слово · пиньинь · перевод', go: () => runMatch(wordPool()) },
       { ico: '🎯', name: 'Тренировка сложных', desc: hard.length >= 4 ? `${hard.length} иероглифов, которые вы забываете` : 'Появится, когда накопятся ошибки (нужно от 4)', disabled: hard.length < 4, go: () => runQuiz({ title: 'Сложные', types: ['zh2ru', 'ru2zh', 'zh2py', 'comp2zh'], pool: hard, count: Math.min(12, hard.length * 2), kind: 'quiz' }) },
@@ -295,8 +308,20 @@
     const lvl = h('select.input', { onchange: () => { store.s.settings.sentLvl = lvl.value; store.save(); hub(); } },
       Object.keys(HZ.games.sentLevels || {}).map(k => h('option', { value: k }, HZ.games.sentLevels[k])));
     lvl.value = store.s.settings.sentLvl || '1';
+    // источник для всех игр: своя или любая другая подборка
+    const colSel = h('select.input', { onchange: () => { store.s.settings.gameSrc = colSel.value; store.save(); hub(); } });
+    colSel.append(h('option', { value: 'auto' }, 'Авто — изученное и выбранный уровень'));
+    const groups = {};
+    HZ.collections.all().filter(c => c.chars.length >= 4).forEach(c => (groups[c.group || 'Другое'] = groups[c.group || 'Другое'] || []).push(c));
+    ['Мои подборки', 'Умные', ...Object.keys(groups).filter(g => g !== 'Мои подборки' && g !== 'Умные')].forEach(g => {
+      if (groups[g]) colSel.append(h('optgroup', { label: g }, groups[g].map(c => h('option', { value: c.id }, `${c.name} (${c.chars.length})`))));
+    });
+    const cur = gameCol();
+    colSel.value = cur ? cur.id : 'auto';
+    const srcInfo = cur ? `Все игры используют подборку «${cur.name}»: ${colEntries(cur).length} иероглифов, ${colWords(cur).length} слов.` : 'Выберите подборку — во всех играх будут её иероглифы, слова и предложения с ними.';
     ui.clear(view).append(h('div.page',
       h('h1', 'Игры'), h('p.muted', 'Играйте, чтобы закреплять иероглифы. Каждая игра приносит XP и помогает находить слабые места.'),
+      h('div.panel.game-src', h('label.field', h('span', '🎯 Что тренируем'), colSel), h('p.muted.small', srcInfo)),
       order.map(grp => {
         const list = all.filter(g => g.group === grp);
         if (!list.length) return null;
@@ -306,5 +331,5 @@
       })));
   }
 
-  HZ.games = { hub, runQuiz, runMatch, placement };
+  HZ.games = { hub, runQuiz, runMatch, placement, gameCol, colEntries, colWords, learnedPool, wordPool };
 })();

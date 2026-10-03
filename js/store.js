@@ -17,7 +17,8 @@
     log: {},           // YYYY-MM-DD -> {rev, ok, newc, xp, games}
     quests: {},        // {date, done:{id:true}}
     best: {},          // рекорды игр
-    evo: null          // состояние игры «Эволюция»
+    evo: null,         // состояние игры «Эволюция»
+    texts: {}          // прочитанные тексты: id -> {done, best, n}
   });
 
   let state;

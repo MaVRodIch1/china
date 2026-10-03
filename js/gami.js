@@ -126,6 +126,9 @@
     { id: 'evo100', ico: '🐸', name: 'Из грязи в князи', desc: '100 верных ответов в «Эволюции»', ok: c => c.evoRight >= 100 },
     { id: 'evoMax', ico: '👑', name: 'Владыка вселенной', desc: 'Вырастить «Вселенную» — 20-й вид в «Эволюции»', ok: c => !!c.flags.evoMax },
     { id: 'evoReb', ico: '🌸', name: 'Новая эра', desc: 'Совершить перерождение в «Эволюции»', ok: c => !!c.flags.evoReb },
+    { id: 'read1', ico: '📖', name: 'Читатель', desc: 'Прочитать первый текст и ответить на вопросы', ok: c => c.readTexts >= 1 },
+    { id: 'read8', ico: '📚', name: 'Книгочей', desc: 'Прочитать 8 текстов', ok: c => c.readTexts >= 8 },
+    { id: 'readAll', ico: '🎓', name: 'Библиотекарь', desc: 'Прочитать все тексты', ok: c => c.readTexts >= HZ.texts.length && HZ.texts.length > 0 },
     { id: 'hsk1', ico: '🏅', name: 'HSK 1 покорён', desc: 'Начать изучать все иероглифы HSK 1 из набора', ok: c => c.hsk1 }
   ];
   function ctx() {
@@ -137,7 +140,7 @@
       started: all.length, mastered: all.filter(HZ.srs.isMastered).length, reviews, games,
       bestStreak: store.s.streak.best, level: levelOf(store.s.xp),
       notes: Object.values(store.s.notes).filter(n => n.assoc && n.assoc.trim()).length,
-      flags: store.s.flags || {}, evoRight: (store.s.evo && store.s.evo.right) || 0,
+      flags: store.s.flags || {}, evoRight: (store.s.evo && store.s.evo.right) || 0, readTexts: Object.values(store.s.texts || {}).filter(x => x.done).length,
       hsk1: hsk1.length > 0 && hsk1.every(x => cs[x.ch])
     };
   }

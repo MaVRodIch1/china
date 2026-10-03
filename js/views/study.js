@@ -17,6 +17,13 @@
     } else if (mode === 'words') {
       title = 'Новые слова';
       queue = srs.newWordList(srs.newWordBudget()).map(k => ({ ch: k, kind: 'intro' }));
+    } else if (mode === 'textwords' || mode === 'textchars') {
+      const t = HZ.textById(arg);
+      if (!t) return HZ.router.go('#/texts');
+      const V = HZ.textVocab(arg);
+      title = (mode === 'textwords' ? 'Слова' : 'Иероглифы') + ' из текста «' + t.zh + '»';
+      const keys = mode === 'textwords' ? V.words.map(w => w.key) : V.chars;
+      queue = keys.filter(srs.isNew).map(ch => ({ ch, kind: 'intro' }));
     } else if (mode === 'hard') {
       title = 'Сложные иероглифы'; cram = true;
       queue = HZ.shuffle(srs.hardList().slice(0, 20)).map(ch => ({ ch, kind: 'rev' }));
