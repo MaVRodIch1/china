@@ -24,13 +24,14 @@ def get(url, name):
     if not os.path.exists(p):
         urllib.request.urlretrieve(url, p)
     return p
-H = 'https://raw.githubusercontent.com/drkameleon/complete-hsk-vocabulary/main/wordlists/exclusive/old/%d.json'
+STD = os.environ.get('HSK_STD', 'new')   # 'new' — HSK 3.0, 'old' — HSK 2.0
+H = 'https://raw.githubusercontent.com/drkameleon/complete-hsk-vocabulary/main/wordlists/exclusive/' + STD + '/%d.json'
 M = 'https://raw.githubusercontent.com/skishore/makemeahanzi/master/'
 # Основное чтение слова (HSK) там, где автоматический выбор неверен
 WORDFIX = {'得': 'de', '长': 'cháng', '便宜': 'pián yi', '教': 'jiāo', '地': 'dì', '分': 'fēn', '行': 'xíng'}
 words = []
 for lv in (1, 2, 3):
-    for w in json.load(open(get(H % lv, f'hsk{lv}.json'), encoding='utf-8')):
+    for w in json.load(open(get(H % lv, f'{STD}{lv}.json' if STD == 'new' else f'hsk{lv}.json'), encoding='utf-8')):
         py = pyw(w['simplified'], w.get('pos', []))
         def compat(fp):  # то же чтение, но в словаре может быть нейтральный тон
             a, b = fp.lower().split(), py.lower().split()
@@ -70,5 +71,5 @@ for c, e in chars.items():
     e['ety'] = m.get('etymology'); e['strokes'] = strokes.get(c, 0)
     e.pop('pyk', None)
     if e['py'] is None: e['py'] = (m.get('pinyin') or [''])[0]
-json.dump(dict(words=words, chars=chars), open(os.path.join(C, 'draft.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+json.dump(dict(words=words, chars=chars), open(os.path.join(C, 'draft.json' if STD == 'old' else 'draft3.json'), 'w', encoding='utf-8'), ensure_ascii=False)
 print(len(words), 'words', len(chars), 'chars', sum(1 for e in chars.values() if not e['py']), 'no pinyin', sum(1 for e in chars.values() if not e['strokes']), 'no strokes')

@@ -38,15 +38,18 @@
   function list() {
     const view = document.getElementById('view');
     const box = h('div.word-list'), count = h('span.muted');
-    function draw() {
+    let shown = 200;
+    function draw(reset) {
+      if (reset === true) shown = 200;
       const l = HZ.words.filter(matches);
-      ui.clear(box).append(...l.slice(0, 400).map(row));
+      ui.clear(box).append(...l.slice(0, shown).map(row));
       if (!l.length) box.append(h('p.muted', 'Ничего не найдено'));
-      count.textContent = `${l.length} из ${HZ.words.length}` + (l.length > 400 ? ' (показаны первые 400 — уточните поиск)' : '');
+      if (l.length > shown) box.append(h('button.btn', { onclick: () => { shown += 300; draw(); } }, `Показать ещё (${l.length - shown})`));
+      count.textContent = `${l.length} из ${HZ.words.length}`;
     }
-    const sel = (key, opts) => { const s = h('select.input', opts.map(([v, t]) => h('option', { value: v }, t))); s.value = filters[key]; s.onchange = () => { filters[key] = s.value; draw(); }; return s; };
+    const sel = (key, opts) => { const s = h('select.input', opts.map(([v, t]) => h('option', { value: v }, t))); s.value = filters[key]; s.onchange = () => { filters[key] = s.value; draw(true); }; return s; };
     const q = h('input.input', { type: 'search', placeholder: 'Поиск: слово, пиньинь, перевод…', value: filters.q });
-    q.oninput = () => { filters.q = q.value; draw(); };
+    q.oninput = () => { filters.q = q.value; draw(true); };
     const fresh = srs.newWordList().length;
     ui.clear(view).append(h('div.page', h('h1', 'Слова'), tabs('words'),
       h('div.row.wrap', h('a.btn.primary', { href: '#/study/words' }, `▶ Учить слова · ${Math.min(fresh, srs.newWordBudget())}`), h('span.muted.small', `Лимит новых слов в день: ${store.s.settings.newWordsPerDay} (в настройках)`)),
@@ -79,6 +82,8 @@
       if (hints.length) root.append(h('section.cd-sec', h('h4', '💡 Подсказки по составу'), h('ul.list', hints.map(x => h('li', h('span.zh', x.ch), ' ', ui.py(x.py), h('span.muted', ' — ' + x.m)))),
         h('p.muted.small', 'Придумайте короткую историю, связав значения иероглифов — так слово запоминается лучше.')));
     }
+    if (e.sents.length) root.append(h('section.cd-sec', h('h4', '💬 Пример'), e.sents.map(s =>
+      h('div.sent', h('div.zh', s.z, ui.speakBtn(s.z, 'sm')), h('div', ui.py(s.p)), h('div.muted', s.m)))));
     if (!opts.compact) {
       const nt = store.note(e.key);
       const area = h('textarea.input', { rows: 2, placeholder: 'Ваша ассоциация или заметка к слову…', maxlength: 400 }, nt.assoc);

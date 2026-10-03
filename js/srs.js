@@ -117,6 +117,7 @@
     const endToday = HZ.endOfDay().getTime();
     const out = [];
     for (const ch in cards()) {
+      if (!HZ.entry(ch)) continue; // карточка удалённого из набора слова/иероглифа
       const c = cards()[ch];
       if (c.st === 'learn') out.push({ ch, due: c.due - 1e12, learn: true });       // обучаемые — вперёд
       else if (c.due <= endToday) out.push({ ch, due: c.due });
@@ -140,12 +141,12 @@
 
   function counts() {
     let learned = 0, learning = 0;
-    for (const ch in cards()) { if (HZ.isKey(ch)) continue; const c = cards()[ch]; if (isMastered(c)) learned++; else learning++; }
+    for (const ch in cards()) { if (HZ.isKey(ch) || !HZ.entry(ch)) continue; const c = cards()[ch]; if (isMastered(c)) learned++; else learning++; }
     return { learned, learning, fresh: HZ.chars.length - learned - learning, total: HZ.chars.length };
   }
   function wordCounts() {
     let learned = 0, learning = 0;
-    for (const k in cards()) { if (!HZ.isKey(k)) continue; const c = cards()[k]; if (isMastered(c)) learned++; else learning++; }
+    for (const k in cards()) { if (!HZ.isKey(k) || !HZ.entry(k)) continue; const c = cards()[k]; if (isMastered(c)) learned++; else learning++; }
     return { learned, learning, fresh: HZ.words.length - learned - learning, total: HZ.words.length };
   }
   const newWordBudget = () => Math.max(0, store.s.settings.newWordsPerDay - (store.today().neww || 0));

@@ -25,9 +25,9 @@
   function builtin() {
     const out = [], all = HZ.chars;
     // HSK
-    [[1, 'HSK 1', 'Базовый уровень: самые нужные иероглифы'], [2, 'HSK 2', 'Элементарный уровень'], [3, 'HSK 3', 'Средний уровень'], [4, 'Вне HSK 1–3', 'Базовые элементы, нужные для разбора других знаков']].forEach(([lv, name, desc]) => {
+    [[1, 'HSK 1', 'Базовый уровень: самые нужные иероглифы'], [2, 'HSK 2', 'Элементарный уровень'], [3, 'HSK 3', 'Средний уровень'], [4, 'Вне HSK 3.0 (1–3)', 'Знаки вне списка уровней 1–3: базовые элементы и иероглифы из прежнего набора']].forEach(([lv, name, desc]) => {
       const cs = all.filter(c => c.h === lv).map(c => c.ch);
-      if (cs.length) out.push({ id: 'hsk' + lv, name, desc: desc + ' (стандарт HSK 2.0)', group: 'HSK', ico: '🏮', chars: cs });
+      if (cs.length) out.push({ id: 'hsk' + lv, name, desc: desc + ' (стандарт HSK 3.0)', group: 'HSK', ico: '🏮', chars: cs });
     });
     // Темы
     Object.keys(HZ.themes).forEach(t => {
