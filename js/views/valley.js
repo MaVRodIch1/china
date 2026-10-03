@@ -1,6 +1,7 @@
-/* «Долина знаков»: большая карта с камерой, локации по уровню героя, враги-кляксы, оружие и прокачка.
- * Учёба: задание «найди знак» (по значению или чтению) — верный знак даёт монеты, опыт и лечение;
- * ошибка порождает кляксы, которые несут на себе перепутанный знак. */
+/* «Долина знаков»: большая карта с камерой, 5 локаций с боссами, враги-кляксы, оружие (в т. ч. стрелковое), модули и прокачка.
+ * Учёба: задание «найди знак» показывается прямо на экране — с самим иероглифом (режим «Знак») или только значением/чтением
+ * (режим «Испытание», награда ×2). Верный знак даёт монеты, опыт, лечение и печать портала босса; в бою с боссом — «удар знания».
+ * Ошибка порождает кляксы, которые несут на себе перепутанный знак. */
 (function () {
   'use strict';
   const HZ = window.HZ, ui = HZ.ui, h = ui.h, store = HZ.store, srs = HZ.srs, G = HZ.games;
@@ -9,12 +10,18 @@
   /* ====== Мир ====== */
   const WW = 2400, WH = 1600;
   const CAMP = { x: WW / 2, y: WH / 2, r: 150 };
+  const SEALS = 8; // столько верных знаков в локации открывают портал босса
   const LOCS = [
-    { name: 'Бамбуковая роща', ico: '🎋', req: 1, g: ['#9fd37f', '#94cb74', '#a6d887'], deco: ['🎋', '🌳', '🌿', '🍄', '🌸', '🪨', '🌼'], blob: '#2c2838', mul: 1, dmg: 1, coin: 1, xp: 1 },
-    { name: 'Пустыня Гоби', ico: '🏜️', req: 5, g: ['#ead5a0', '#e2cb92', '#efdcac'], deco: ['🌵', '🪨', '🦴', '🏺', '🌾', '🐫'], blob: '#8a5226', mul: 2, dmg: 1.5, coin: 1.8, xp: 1.5 },
-    { name: 'Снежные горы', ico: '🏔️', req: 10, g: ['#e6eff6', '#dce8f1', '#eef4f9'], deco: ['🌲', '❄️', '⛄', '🪨', '🏔️', '🌨️'], blob: '#2f63a8', mul: 3.5, dmg: 2.1, coin: 3, xp: 2.2 },
-    { name: 'Огненная долина', ico: '🌋', req: 15, g: ['#6e4a3e', '#664338', '#76503f'], deco: ['🌋', '🔥', '🪨', '💀', '🌑', '♨️'], blob: '#d23f22', mul: 6, dmg: 2.9, coin: 5, xp: 3.2 },
-    { name: 'Небесный храм', ico: '⛩️', req: 20, g: ['#f2dbe7', '#ebd1df', '#f6e3ec'], deco: ['⛩️', '🏮', '🌸', '☁️', '🎐', '🐉'], blob: '#7b3db3', mul: 10, dmg: 4, coin: 8, xp: 4.5 }
+    { name: 'Бамбуковая роща', ico: '🎋', req: 1, g: ['#9fd37f', '#94cb74', '#a6d887'], deco: ['🎋', '🌳', '🌿', '🍄', '🌸', '🪨', '🌼'], blob: '#2c2838', mul: 1, dmg: 1, coin: 1, xp: 1, portal: { x: 2120, y: 280 },
+      boss: { name: 'Чернильный великан', ch: '墨', hp: 2200, r: 70, color: '#15121f', sp: 65, dmg: 16, bdmg: 8, attacks: ['summon', 'charge', 'ring'], hat: '🎩' } },
+    { name: 'Пустыня Гоби', ico: '🏜️', req: 5, g: ['#ead5a0', '#e2cb92', '#efdcac'], deco: ['🌵', '🪨', '🦴', '🏺', '🌾', '🐫'], blob: '#8a5226', mul: 2, dmg: 1.5, coin: 1.8, xp: 1.5, portal: { x: 280, y: 1320 },
+      boss: { name: 'Песчаный змей', ch: '沙', hp: 6000, r: 66, color: '#a8702f', sp: 90, dmg: 22, bdmg: 11, attacks: ['charge', 'spray', 'ring', 'summon'], hat: '🦂' } },
+    { name: 'Снежные горы', ico: '🏔️', req: 10, g: ['#e6eff6', '#dce8f1', '#eef4f9'], deco: ['🌲', '❄️', '⛄', '🪨', '🏔️', '🌨️'], blob: '#2f63a8', mul: 3.5, dmg: 2.1, coin: 3, xp: 2.2, portal: { x: 2120, y: 1320 },
+      boss: { name: 'Ледяной дух', ch: '冰', hp: 14000, r: 64, color: '#5e9fd8', sp: 80, dmg: 28, bdmg: 14, attacks: ['spiral', 'ring', 'summon', 'spray'], hat: '❄️' } },
+    { name: 'Огненная долина', ico: '🌋', req: 15, g: ['#6e4a3e', '#664338', '#76503f'], deco: ['🌋', '🔥', '🪨', '💀', '🌑', '♨️'], blob: '#d23f22', mul: 6, dmg: 2.9, coin: 5, xp: 3.2, portal: { x: 280, y: 280 },
+      boss: { name: 'Огненный дракон', ch: '火', hp: 30000, r: 78, color: '#d9441f', sp: 85, dmg: 36, bdmg: 18, attacks: ['spray', 'rain', 'charge', 'ring'], hat: '🐲' } },
+    { name: 'Небесный храм', ico: '⛩️', req: 20, g: ['#f2dbe7', '#ebd1df', '#f6e3ec'], deco: ['⛩️', '🏮', '🌸', '☁️', '🎐', '🐉'], blob: '#7b3db3', mul: 10, dmg: 4, coin: 8, xp: 4.5, portal: { x: 1200, y: 200 },
+      boss: { name: 'Тёмный мудрец', ch: '暗', hp: 60000, r: 68, color: '#4b2385', sp: 75, dmg: 45, bdmg: 22, attacks: ['teleport', 'spiral', 'summon', 'rain', 'ring'], hat: '🔮' } }
   ];
   const ETYPES = {
     small: { r: 15, hp: 16, sp: 110, dmg: 5, xp: 3, coin: 2 },
@@ -22,27 +29,43 @@
     big: { r: 34, hp: 100, sp: 50, dmg: 13, xp: 18, coin: 14, split: true },
     king: { r: 48, hp: 520, sp: 44, dmg: 20, xp: 90, coin: 80 }
   };
+  const TONE_COL = ['#d93c4a', '#d98a0b', '#1f9d63', '#2e6fe0', '#8a8a8a'];
 
   /* ====== Прокачка ====== */
   const UPS = {
-    hp: { tab: 'hero', ico: '❤️', name: 'Здоровье', desc: lv => `+20 к здоровью (сейчас +${lv * 20})`, cost: lv => Math.round(50 * Math.pow(1.6, lv)), max: 20 },
-    armor: { tab: 'hero', ico: '🛡️', name: 'Броня', desc: lv => `−5% урона от клякс (сейчас −${Math.min(60, lv * 5)}%)`, cost: lv => Math.round(80 * Math.pow(1.75, lv)), max: 12 },
+    hp: { tab: 'hero', ico: '❤️', name: 'Здоровье', desc: lv => `+20 к здоровью (сейчас +${lv * 20})`, cost: lv => Math.round(50 * Math.pow(1.6, lv)), max: 25 },
+    armor: { tab: 'hero', ico: '🛡️', name: 'Броня', desc: lv => `−5% урона от клякс и боссов (сейчас −${Math.min(60, lv * 5)}%)`, cost: lv => Math.round(80 * Math.pow(1.75, lv)), max: 12 },
     regen: { tab: 'hero', ico: '💗', name: 'Восстановление', desc: lv => `Здоровье восстанавливается быстрее (${(.5 + .6 * lv).toFixed(1)}/с, в лагере ×8)`, cost: lv => Math.round(70 * Math.pow(1.7, lv)), max: 15 },
     speed: { tab: 'hero', ico: '👟', name: 'Быстрые ноги', desc: lv => `+7% к скорости (сейчас ×${(1 + .07 * lv).toFixed(2)})`, cost: lv => Math.round(40 * Math.pow(1.7, lv)), max: 12 },
     magnet: { tab: 'hero', ico: '🧲', name: 'Магнит', desc: lv => `Монеты притягиваются издалека, знаки подбираются легче (+${lv * 18} px)`, cost: lv => Math.round(60 * Math.pow(1.8, lv)), max: 10 },
+    power: { tab: 'mods', ico: '💪', name: 'Сила', desc: lv => `+10% урона всего оружия (сейчас +${lv * 10}%)`, cost: lv => Math.round(100 * Math.pow(1.7, lv)), max: 25 },
+    rate: { tab: 'mods', ico: '⏱️', name: 'Скорострельность', desc: lv => `Оружие перезаряжается на 4% быстрее (сейчас −${lv * 4}%)`, cost: lv => Math.round(150 * Math.pow(1.8, lv)), max: 12 },
+    range: { tab: 'mods', ico: '🎯', name: 'Дальность', desc: lv => `+8% к дальности оружия (сейчас +${lv * 8}%)`, cost: lv => Math.round(120 * Math.pow(1.75, lv)), max: 8 },
+    crit: { tab: 'mods', ico: '💥', name: 'Критический удар', desc: lv => `Шанс двойного урона ${lv * 5}%`, cost: lv => Math.round(200 * Math.pow(1.8, lv)), max: 10 },
     income: { tab: 'eco', ico: '🌾', name: 'Ферма', desc: lv => `+1,2 🪙/с пассивно (сейчас +${(lv * 1.2).toFixed(1)})`, cost: lv => Math.round(50 * Math.pow(1.6, lv)), max: 30 },
     reward: { tab: 'eco', ico: '💎', name: 'Награда за знак', desc: lv => `+15% монет за верный знак (сейчас +${lv * 15}%)`, cost: lv => Math.round(80 * Math.pow(1.7, lv)), max: 30 },
-    wisdom: { tab: 'eco', ico: '🧠', name: 'Мудрость', desc: lv => `Подсказка с чтением через ${Math.max(1.5, 9 - 1.2 * lv).toFixed(1)} с${lv >= 5 ? ', нужный знак светится' : ' (с 5 ур. нужный знак светится)'}`, cost: lv => Math.round(120 * Math.pow(2, lv)), max: 6 }
+    wisdom: { tab: 'eco', ico: '🧠', name: 'Мудрость', desc: lv => `В «Испытании» подсказка через ${Math.max(1.5, 9 - 1.2 * lv).toFixed(1)} с${lv >= 5 ? ', нужный знак светится' : ' (с 5 ур. нужный знак светится)'}`, cost: lv => Math.round(120 * Math.pow(2, lv)), max: 6 }
   };
+  // unlock — индекс локации, босса которой нужно победить, чтобы купить оружие
   const WEAPONS = {
     brush: { ico: '🖌️', name: 'Кисть мастера', desc: 'Взмах по кляксам рядом с героем', cost: lv => Math.round(60 * Math.pow(1.75, lv)), max: 10,
-      st: lv => ({ dmg: 12 + 6 * (lv - 1), cd: Math.max(.35, .8 - .045 * (lv - 1)), range: 90 + 5 * (lv - 1) }), info: s => `урон ${s.dmg} · раз в ${s.cd.toFixed(2)} с · радиус ${s.range}` },
-    glyph: { ico: '🀄', name: 'Летящие знаки', desc: 'Метает иероглифы в дальних клякс', cost: lv => Math.round(150 * Math.pow(1.8, lv)), max: 10,
+      st: lv => ({ dmg: 12 + 6 * (lv - 1), cd: Math.max(.35, .8 - .045 * (lv - 1)), range: 90 + 5 * (lv - 1) }), info: s => `урон ${s.dmg} · раз в ${s.cd.toFixed(2)} с` },
+    smg: { ico: '🔫', name: 'Автомат', desc: 'Очереди по ближайшей кляксе', cost: lv => Math.round(120 * Math.pow(1.75, lv)), max: 12,
+      st: lv => ({ dmg: 5 + 2.5 * (lv - 1), cd: Math.max(.06, .15 - .008 * (lv - 1)), range: 380 }), info: s => `урон ${s.dmg} · ${Math.round(1 / s.cd)} выстр./с` },
+    glyph: { ico: '🀄', name: 'Летящие знаки', desc: 'Самонаводящиеся иероглифы', cost: lv => Math.round(150 * Math.pow(1.8, lv)), max: 10,
       st: lv => ({ dmg: 9 + 5 * (lv - 1), cd: Math.max(.4, 1.2 - .08 * (lv - 1)), range: 430, count: 1 + Math.floor((lv - 1) / 3) }), info: s => `урон ${s.dmg} · ${s.count} шт. раз в ${s.cd.toFixed(2)} с` },
-    orbit: { ico: '🏮', name: 'Фонари-хранители', desc: 'Фонари кружат вокруг героя и обжигают клякс', cost: lv => Math.round(300 * Math.pow(1.85, lv)), max: 8,
+    orbit: { ico: '🏮', name: 'Фонари-хранители', desc: 'Фонари кружат вокруг героя и обжигают', cost: lv => Math.round(300 * Math.pow(1.85, lv)), max: 8,
       st: lv => ({ dmg: 8 + 4 * (lv - 1), n: 1 + Math.floor(lv / 2), radius: 72 + 5 * lv }), info: s => `урон ${s.dmg} · фонарей ${s.n}` },
     gong: { ico: '🔔', name: 'Гонг', desc: 'Волна бьёт и отбрасывает всех вокруг', cost: lv => Math.round(500 * Math.pow(1.9, lv)), max: 8,
-      st: lv => ({ dmg: 25 + 12 * (lv - 1), cd: Math.max(2.2, 6 - .45 * (lv - 1)), radius: 150 + 12 * lv }), info: s => `урон ${s.dmg} · раз в ${s.cd.toFixed(1)} с · радиус ${s.radius}` }
+      st: lv => ({ dmg: 25 + 12 * (lv - 1), cd: Math.max(2.2, 6 - .45 * (lv - 1)), radius: 150 + 12 * lv }), info: s => `урон ${s.dmg} · раз в ${s.cd.toFixed(1)} с` },
+    shotgun: { ico: '💥', name: 'Дробовик', desc: 'Веер дроби — очень мощно вблизи', unlock: 0, cost: lv => Math.round(400 * Math.pow(1.8, lv)), max: 10,
+      st: lv => ({ dmg: 9 + 4 * (lv - 1), cd: Math.max(.5, 1.1 - .06 * (lv - 1)), range: 260, pellets: 5 + Math.floor(lv / 3) }), info: s => `${s.pellets}×${s.dmg} урона · раз в ${s.cd.toFixed(2)} с` },
+    rocket: { ico: '🚀', name: 'Ракетница', desc: 'Ракета взрывается и задевает всех рядом', unlock: 1, cost: lv => Math.round(900 * Math.pow(1.85, lv)), max: 10,
+      st: lv => ({ dmg: 40 + 18 * (lv - 1), cd: Math.max(.9, 2.2 - .13 * (lv - 1)), range: 520, blast: 80 + 6 * lv }), info: s => `урон ${s.dmg} · взрыв ${s.blast} · раз в ${s.cd.toFixed(1)} с` },
+    lightning: { ico: '⚡', name: 'Молния', desc: 'Бьёт цель и перескакивает на соседних', unlock: 2, cost: lv => Math.round(2000 * Math.pow(1.9, lv)), max: 10,
+      st: lv => ({ dmg: 30 + 14 * (lv - 1), cd: Math.max(.6, 1.6 - .1 * (lv - 1)), range: 400, chains: 2 + Math.floor(lv / 2) }), info: s => `урон ${s.dmg} · прыжков ${s.chains}` },
+    beam: { ico: '☄️', name: 'Луч дракона', desc: 'Луч прожигает всех на линии', unlock: 3, cost: lv => Math.round(4500 * Math.pow(1.95, lv)), max: 8,
+      st: lv => ({ dps: 60 + 30 * (lv - 1), cd: Math.max(2, 3.6 - .2 * (lv - 1)), dur: 1.2 + .1 * lv, range: 520 }), info: s => `${s.dps} урона/с · ${s.dur.toFixed(1)} с` }
   };
   const PET_MAX = 6;
   const petCost = n => Math.round(200 * Math.pow(2.5, n));
@@ -50,11 +73,14 @@
   function WS() {
     let v = store.s.walk;
     if (!v || typeof v !== 'object') v = store.s.walk = {};
-    const d = { coins: 0, ups: {}, wp: { brush: 1, glyph: 0, orbit: 0, gong: 0 }, pets: [], skin: 0, right: 0, wrong: 0, bestCombo: 0, sound: true, last: Date.now(), upd: 0, hp: null, loc: 0, maxLoc: 0, kills: 0, deaths: 0 };
+    const d = { coins: 0, ups: {}, wp: {}, pets: [], skin: 0, right: 0, wrong: 0, bestCombo: 0, sound: true, last: Date.now(), upd: 0, hp: null, loc: 0, maxLoc: 0, kills: 0, deaths: 0, mode: 'show', seals: {}, bossKills: [0, 0, 0, 0, 0] };
     if (v.xp === undefined) v.xp = (v.right || 0) * 10; // перенос прогресса из первой версии
     Object.keys(d).forEach(k => { if (v[k] === undefined) v[k] = d[k]; });
-    v.ups = Object.assign({ hp: 0, armor: 0, regen: 0, speed: 0, magnet: 0, income: 0, reward: 0, wisdom: 0 }, v.ups);
-    v.wp = Object.assign({ brush: 1, glyph: 0, orbit: 0, gong: 0 }, v.wp);
+    const z = {}; Object.keys(UPS).forEach(k => { z[k] = 0; });
+    v.ups = Object.assign(z, v.ups);
+    const w = {}; Object.keys(WEAPONS).forEach(k => { w[k] = k === 'brush' ? 1 : 0; });
+    v.wp = Object.assign(w, v.wp);
+    while (v.bossKills.length < LOCS.length) v.bossKills.push(0);
     if (!LOCS[v.loc]) v.loc = 0;
     return v;
   }
@@ -66,6 +92,8 @@
   const speedOf = v => 200 * (1 + .07 * v.ups.speed);
   const magnetR = v => 70 + 18 * v.ups.magnet;
   const incomeOf = v => (0.2 + 1.2 * v.ups.income + 2.5 * v.pets.length) * (1 + .1 * (heroLvl(v) - 1));
+  const locOpen = (v, i) => i === 0 || i <= v.maxLoc || heroLvl(v) >= LOCS[i].req || v.bossKills[i - 1] > 0;
+  const wpOpen = (v, k) => WEAPONS[k].unlock === undefined || v.bossKills[WEAPONS[k].unlock] > 0;
   const touchW = () => { store.s.walk.upd = Date.now(); store.save(); };
 
   /* Кэш эмодзи как картинок — быстрее, чем fillText каждый кадр */
@@ -85,11 +113,12 @@
     const out = [], L = LOCS[li];
     for (let k = 0; k < 340; k++) {
       const x = 30 + rnd() * (WW - 60), y = 30 + rnd() * (WH - 60);
-      if (Math.hypot(x - CAMP.x, y - CAMP.y) < CAMP.r + 60) continue;
+      if (Math.hypot(x - CAMP.x, y - CAMP.y) < CAMP.r + 60 || Math.hypot(x - L.portal.x, y - L.portal.y) < 110) continue;
       out.push({ x, y, e: L.deco[Math.floor(rnd() * L.deco.length)], s: 22 + Math.floor(rnd() * 3) * 6 });
     }
     return out;
   }
+  const segDist = (px, py, ax, ay, bx, by) => { const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1; let t = ((px - ax) * dx + (py - ay) * dy) / l2; t = Math.max(0, Math.min(1, t)); return Math.hypot(px - ax - t * dx, py - ay - t * dy); };
 
   /* ====== Игра ====== */
   function view() {
@@ -98,7 +127,7 @@
     const area = h('div.page.walk');
     ui.clear(root).append(area);
     const narrow = (area.clientWidth || window.innerWidth) < 640;
-    const VW = narrow ? 540 : 960, VH = narrow ? 640 : 600;
+    const VW = narrow ? 540 : 960, VH = narrow ? 660 : 600;
     const canvas = h('canvas.wk-canvas', { tabindex: 0, style: { aspectRatio: `${VW} / ${VH}` } });
     const ctx = setupCanvas(canvas, VW, VH);
 
@@ -109,23 +138,24 @@
     if (v.hp == null || v.hp <= 0) v.hp = maxHp(v);
     store.save();
 
-    const el = { coins: h('b.wk-coins', ''), inc: h('span.muted.small'), lvl: h('span.hud-pill'), loc: h('span.hud-pill.wk-locpill'), combo: h('span.hud-pill'), banner: h('div.wk-banner'),
-      shop: h('button.btn.sm', { type: 'button', onclick: () => shop('hero') }, '🛒 Магазин'),
+    const el = { coins: h('b.wk-coins', ''), inc: h('span.muted.small'), lvl: h('span.hud-pill'), loc: h('span.hud-pill.wk-locpill'), combo: h('span.hud-pill'),
+      shop: h('button.btn.sm', { type: 'button', onclick: () => shop('weapons') }, '🛒 Магазин'),
+      mode: h('button.btn.sm', { type: 'button', onclick: () => { v.mode = v.mode === 'hard' ? 'show' : 'hard'; touchW(); hud(); ui.toast(v.mode === 'hard' ? '🧠 Испытание: на экране только значение или чтение — награда ×2' : '🎯 Знак на экране: показан сам иероглиф, стрелка ведёт к нему'); } }),
       snd: h('button.btn.sm', { type: 'button', onclick: () => { v.sound = !v.sound; touchW(); hud(); } }) };
     const src = G.srcSelect(() => newRound());
     area.append(
       h('div.wk-top', h('div', h('div.evo-coin-row', h('span.evo-coin', '🪙'), el.coins), el.inc), h('div.wk-pills', el.lvl, el.loc, el.combo)),
-      h('div.wk-bar', el.shop, h('button.btn.sm', { type: 'button', onclick: () => mapDialog() }, '🗺️ Карта'), h('button.btn.sm', { type: 'button', onclick: () => heroPicker() }, '🐾 Герой'), el.snd, h('label.wk-src', h('span.muted.small', '🎯'), src)),
-      el.banner, canvas,
-      h('p.muted.small.center', 'WASD или стрелки (на телефоне — ведите пальцем по полю). Оружие бьёт само. Найдите знак из задания — получите монеты, опыт и лечение. Ошибка рождает кляксы с перепутанным знаком. В лагере 🏕️ кляксы не трогают, а здоровье быстро восстанавливается.'));
+      h('div.wk-bar', el.shop, h('button.btn.sm', { type: 'button', onclick: () => mapDialog() }, '🗺️ Карта'), el.mode, h('button.btn.sm', { type: 'button', onclick: () => heroPicker() }, '🐾 Герой'), el.snd, h('label.wk-src', h('span.muted.small', '📚'), src)),
+      canvas,
+      h('p.muted.small.center', 'WASD или стрелки (на телефоне — ведите пальцем по полю). Оружие стреляет само. Задание вверху экрана: найдите этот знак — получите монеты, опыт, лечение и печать 🌀. 8 печатей открывают портал босса. В бою с боссом верный знак наносит «удар знания». В лагере 🏕️ кляксы не трогают.'));
 
     let L = LOCS[v.loc], deco = decoFor(v.loc);
     const P = { x: CAMP.x, y: CAMP.y + 40, face: 1, bob: 0, moving: false, inv: 2, kx: 0, ky: 0 };
     const cam = { x: 0, y: 0 }, trail = [];
-    let enemies = [], bubbles = [], drops = [], shots = [], fx = [], slashes = [], waves = [];
-    let quest = null, combo = 0, hintShown = false, roundWrong = false, stop = false, raf = 0, last = performance.now();
+    let enemies = [], bubbles = [], drops = [], shots = [], ebul = [], rains = [], fx = [], slashes = [], waves = [], bolts = [], beam = null, boss = null;
+    let quest = null, combo = 0, hintShown = false, roundWrong = false, stop = false, raf = 0, last = performance.now(), reveal = null;
     let spawnT = 0, saveT = 0, hudT = 0, shake = 0, hurtSfxT = 0, lastLvl = heroLvl(v), orbitA = 0;
-    const wt = { brush: 0, glyph: 0, gong: 0 }, petT = [];
+    const wt = {}, petT = [];
     const session = { right: 0, wrong: 0 };
     const queue = makeQueue(pool0, e => accOf(e) * 5);
     const ctl = controls(canvas);
@@ -134,26 +164,20 @@
 
     const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
     const inCamp = p => dist(p, CAMP) < CAMP.r;
-    const dmgMul = () => (1 + .06 * (heroLvl(v) - 1)) * (1 + .04 * Math.min(combo, 10));
+    const dmgMul = () => (1 + .06 * (heroLvl(v) - 1)) * (1 + .04 * Math.min(combo, 10)) * (1 + .1 * v.ups.power);
+    const seals = () => v.seals[v.loc] || 0;
 
     function hud() {
       const lv = heroLvl(v);
       el.coins.textContent = fmt(v.coins);
-      el.inc.textContent = `+${fmt(incomeOf(v))} 🪙/с · кляксы: ${v.kills}`;
+      el.inc.textContent = `+${fmt(incomeOf(v))} 🪙/с · кляксы: ${v.kills} · боссы: ${v.bossKills.reduce((a, b) => a + b, 0)}`;
       el.lvl.textContent = `⭐ Ур. ${lv}`;
       el.loc.textContent = `${L.ico} ${L.name}`;
       el.combo.textContent = combo >= 2 ? `🔥 ×${combo} · +${Math.min(combo, 10) * 4}% урона` : 'Серия 0'; el.combo.classList.toggle('hot', combo >= 2);
+      el.mode.textContent = v.mode === 'hard' ? '🧠 Испытание ×2' : '🎯 Знак на экране';
       el.snd.textContent = v.sound ? '🔊' : '🔇';
-      const aff = Object.keys(UPS).some(k => v.ups[k] < UPS[k].max && v.coins >= UPS[k].cost(v.ups[k])) || Object.keys(WEAPONS).some(k => v.wp[k] < WEAPONS[k].max && v.coins >= WEAPONS[k].cost(v.wp[k])) || (v.pets.length < PET_MAX && v.coins >= petCost(v.pets.length));
+      const aff = Object.keys(UPS).some(k => v.ups[k] < UPS[k].max && v.coins >= UPS[k].cost(v.ups[k])) || Object.keys(WEAPONS).some(k => wpOpen(v, k) && v.wp[k] < WEAPONS[k].max && v.coins >= WEAPONS[k].cost(v.wp[k])) || (v.pets.length < PET_MAX && v.coins >= petCost(v.pets.length));
       el.shop.classList.toggle('afford', aff);
-    }
-    function banner() {
-      if (!quest) return;
-      const e = quest.e, hintDelay = Math.max(1.5, 9 - 1.2 * v.ups.wisdom), hintOn = hintShown || quest.wrong;
-      ui.clear(el.banner).append(quest.type === 'm'
-        ? h('div', h('span.muted', 'Найди знак: '), h('b.wk-target', firstGloss(e.m)), hintOn ? h('span.wk-hint', ' ', ui.py(e.py, 'lg')) : h('span.muted.small', ` · подсказка через ${Math.max(0, Math.ceil(hintDelay - (performance.now() - quest.t0) / 1000))} с`))
-        : h('div', h('span.muted', 'Найди знак с чтением: '), h('b.wk-target', ui.py(e.py, 'lg')), hintOn ? h('span.wk-hint.muted', ' · ' + firstGloss(e.m)) : null));
-      if (quest.wrong && quest.reveal) el.banner.append(h('div.small.wk-reveal', quest.reveal));
     }
 
     /* --- задание «найди знак» --- */
@@ -169,24 +193,33 @@
         for (let t = 0; t < 120 && !p; t++) {
           const a = Math.random() * 6.283, d = 260 + Math.random() * 380, x = P.x + Math.cos(a) * d, y = P.y + Math.sin(a) * d;
           if (x < 90 || y < 90 || x > WW - 90 || y > WH - 90) continue;
-          if (dist({ x, y }, CAMP) < CAMP.r + 50 || bubbles.some(b => Math.hypot(b.x - x, b.y - y) < 150)) continue;
+          if (dist({ x, y }, CAMP) < CAMP.r + 50 || dist({ x, y }, L.portal) < 100 || bubbles.some(b => Math.hypot(b.x - x, b.y - y) < 150)) continue;
           p = { x, y };
         }
         if (!p) p = { x: Math.min(WW - 90, Math.max(90, P.x + (Math.random() - .5) * 600)), y: Math.min(WH - 90, Math.max(90, P.y + (Math.random() - .5) * 400)) };
         bubbles.push({ x: p.x, y: p.y, e: it, ok: it === e, ph: Math.random() * 6, r: 38, dead: 0, pop: 0 });
       });
-      banner(); hud();
+      hud();
     }
     function onRight(b) {
-      const e = quest.e, li = v.loc;
+      const e = quest.e, li = v.loc, hard = v.mode === 'hard';
       combo++; v.right++; session.right++; v.bestCombo = Math.max(v.bestCombo, combo);
-      const gain = Math.round((8 + heroLvl(v) * 2 + Math.min(combo, 15) * 2) * (1 + .15 * v.ups.reward) * LOCS[li].coin * (roundWrong ? .5 : 1));
+      const gain = Math.round((8 + heroLvl(v) * 2 + Math.min(combo, 15) * 2) * (1 + .15 * v.ups.reward) * LOCS[li].coin * (roundWrong ? .5 : 1) * (hard ? 2 : 1));
       v.coins += gain;
-      addXp(Math.round((12 + Math.min(combo, 10) * 2) * (1 + .25 * li)));
+      addXp(Math.round((12 + Math.min(combo, 10) * 2) * (1 + .25 * li) * (hard ? 1.5 : 1)));
       v.hp = Math.min(maxHp(v), v.hp + maxHp(v) * .1);
       srs.record(keyOf(e), true);
       floatText(b.x, b.y - 30, '+' + gain + ' 🪙', '#e0a000'); burst(b.x, b.y, '#ffd34d', 18);
       ui.sfx('ok'); if (v.sound) ui.speak(e.ch);
+      if (boss) { // удар знания
+        const d = Math.round(boss.max * .08);
+        boss.hp -= d; boss.stun = 1.2; boss.hit = .3;
+        floatText(boss.x, boss.y - boss.r - 30, `Удар знания! −${fmt(d)}`, '#7a4dc9', 1.8); burst(boss.x, boss.y, '#b48cff', 30); shake = .3;
+        if (boss.hp <= 0) kill(boss);
+      } else if (seals() < SEALS) {
+        v.seals[li] = Math.min(SEALS, seals() + (hard ? 2 : 1));
+        if (seals() >= SEALS) { ui.toast(`🌀 Портал босса открыт! «${L.boss.name}» ждёт — портал отмечен на мини-карте`, 'gold', 5000); ui.sfx('level'); }
+      }
       b.pop = 1; bubbles.forEach(x => { if (x !== b) x.dead = Math.max(x.dead, .01); });
       quest.done = true; touchW(); hud();
       setTimeout(() => { if (!stop) newRound(); }, 650);
@@ -199,9 +232,9 @@
       roundWrong = true; b.dead = .01;
       floatText(b.x, b.y - 30, 'Ошибка рождает кляксы!', '#d64545'); burst(b.x, b.y, '#d64545', 14); ui.sfx('bad');
       for (let i = 0; i < 2; i++) { const a = Math.random() * 6.283; spawnEnemy('small', b.x + Math.cos(a) * 60, b.y + Math.sin(a) * 60, b.e); }
-      quest.wrong = true;
-      quest.reveal = h('span', '«', b.e.ch, '» — ', ui.py(b.e.py), ' ', firstGloss(b.e.m));
-      banner(); hud(); touchW();
+      quest.wrong = true; hintShown = true;
+      reveal = { e: b.e, t: performance.now() };
+      hud(); touchW();
     }
 
     /* --- опыт, уровни, локации --- */
@@ -211,14 +244,15 @@
       if (lv > lastLvl) {
         lastLvl = lv; v.hp = maxHp(v);
         ui.toast(`⭐ Уровень героя ${lv}! Здоровье и сила выросли`, 'gold', 3000); ui.sfx('level'); ui.confetti(60);
-        LOCS.forEach((l, i) => { if (lv >= l.req && i > v.maxLoc) { v.maxLoc = i; setTimeout(() => ui.toast(`🗺️ Открыта локация: ${l.ico} ${l.name}! Откройте «Карту»`, 'gold', 5000), 600); } });
+        LOCS.forEach((l, i) => { if (locOpen(v, i) && i > v.maxLoc) { v.maxLoc = i; setTimeout(() => ui.toast(`🗺️ Открыта локация: ${l.ico} ${l.name}! Откройте «Карту»`, 'gold', 5000), 600); } });
         touchW();
       }
     }
     function travel(i) {
-      if (i > v.maxLoc) return;
+      if (!locOpen(v, i)) return;
       v.loc = i; L = LOCS[i]; deco = decoFor(i);
-      enemies = []; drops = []; shots = []; P.x = CAMP.x; P.y = CAMP.y + 40; P.inv = 2; trail.length = 0;
+      enemies = []; drops = []; shots = []; ebul = []; rains = []; boss = null; beam = null;
+      P.x = CAMP.x; P.y = CAMP.y + 40; P.inv = 2; trail.length = 0;
       touchW(); newRound(); hud();
       ui.toast(`${L.ico} ${L.name}`, 'gold', 2500);
     }
@@ -227,55 +261,133 @@
     function spawnEnemy(type, x, y, glyph) {
       const T = ETYPES[type];
       const hp = Math.round(T.hp * L.mul);
-      enemies.push({ type, x, y, r: T.r, hp, max: hp, sp: T.sp * (.9 + Math.random() * .2), dmg: T.dmg * L.dmg, xp: T.xp * L.xp, coin: T.coin * L.coin, kx: 0, ky: 0, hit: 0, ph: Math.random() * 6, wa: Math.random() * 6.283, wt: 0, oc: 0, glyph: glyph || null });
+      const e = { type, x, y, r: T.r, hp, max: hp, sp: T.sp * (.9 + Math.random() * .2), dmg: T.dmg * L.dmg, xp: T.xp * L.xp, coin: T.coin * L.coin, kx: 0, ky: 0, hit: 0, ph: Math.random() * 6, wa: Math.random() * 6.283, wt: 0, oc: 0, glyph: glyph || null };
+      enemies.push(e); return e;
     }
     function spawnTick() {
       const li = v.loc, lv = heroLvl(v);
-      const target = Math.min(24, 6 + 2 * li + Math.floor(lv / 3));
+      let target = Math.min(24, 6 + 2 * li + Math.floor(lv / 3));
+      if (boss) target = Math.floor(target / 2);
       if (enemies.length >= target) return;
       const far = Math.max(VW, VH) * .6 + 100;
       for (let t = 0; t < 30; t++) {
         const x = 60 + Math.random() * (WW - 120), y = 60 + Math.random() * (WH - 120);
         if (Math.hypot(x - P.x, y - P.y) < far || Math.hypot(x - CAMP.x, y - CAMP.y) < CAMP.r + 250) continue;
         const r = Math.random();
-        const type = !enemies.some(e => e.type === 'king') && r < .03 ? 'king' : r < .15 + .03 * li ? 'big' : r < .55 ? 'mid' : 'small';
+        const type = !boss && !enemies.some(e => e.type === 'king') && r < .03 ? 'king' : r < .15 + .03 * li ? 'big' : r < .55 ? 'mid' : 'small';
         const pool = pool0();
         spawnEnemy(type, x, y, (Math.random() < .22 || type === 'king') && pool.length ? pool[HZ.rand(pool.length)] : null);
         return;
       }
     }
     function hurt(e, dmg, kx, ky) {
-      dmg = Math.round(dmg * dmgMul());
-      e.hp -= dmg; e.hit = .12; e.kx += kx || 0; e.ky += ky || 0;
-      fx.push({ type: 'num', x: e.x + (Math.random() - .5) * 10, y: e.y - e.r, text: String(dmg), t: 0 });
-      if (e.hp <= 0 && !e.dead) kill(e);
+      if (e.dead) return;
+      const crit = Math.random() < .05 * v.ups.crit;
+      dmg = Math.round(dmg * dmgMul() * (crit ? 2 : 1));
+      e.hp -= dmg; e.hit = .12;
+      const kb = e.isBoss ? .08 : 1; e.kx += (kx || 0) * kb; e.ky += (ky || 0) * kb;
+      fx.push({ type: 'num', x: e.x + (Math.random() - .5) * 14, y: e.y - e.r, text: crit ? dmg + '!' : String(dmg), crit, t: 0 });
+      if (e.hp <= 0) kill(e);
     }
     function kill(e) {
-      e.dead = true; v.kills++;
+      if (e.dead) return;
+      e.dead = true;
+      if (e.isBoss) return bossDown(e);
+      v.kills++;
       addXp(Math.round(e.xp));
       const n = Math.min(6, Math.max(1, Math.round(e.coin / 4)));
       for (let i = 0; i < n; i++) drops.push({ type: 'coin', x: e.x + (Math.random() - .5) * e.r * 2, y: e.y + (Math.random() - .5) * e.r * 2, val: e.coin / n, t: 0 });
       if (Math.random() < (e.type === 'king' ? 1 : .06)) drops.push({ type: 'heart', x: e.x, y: e.y, t: 0 });
       burst(e.x, e.y, L.blob, e.type === 'king' ? 40 : 14);
       if (ETYPES[e.type].split) for (let i = 0; i < 2; i++) spawnEnemy('small', e.x + (i ? 18 : -18), e.y, null);
-      if (e.glyph) { floatText(e.x, e.y - e.r - 16, `${e.glyph.ch} — ${firstGloss(e.glyph.m)}`, '#7a4dc9', 1.8); }
+      if (e.glyph) floatText(e.x, e.y - e.r - 16, `${e.glyph.ch} — ${firstGloss(e.glyph.m)}`, '#7a4dc9', 1.8);
       if (e.type === 'king') { ui.toast('👑 Королевская клякса повержена!', 'gold', 3000); ui.confetti(90); }
+    }
+
+    /* --- боссы --- */
+    function startBoss() {
+      const B = L.boss;
+      const lvl = v.bossKills[v.loc]; // повторные победы — босс сильнее
+      const hp = Math.round(B.hp * (1 + .5 * lvl));
+      boss = { isBoss: true, x: L.portal.x + (L.portal.x > WW / 2 ? -160 : 160), y: L.portal.y + (L.portal.y > WH / 2 ? -120 : 120), r: B.r, hp, max: hp, sp: B.sp, dmg: B.dmg, bdmg: B.bdmg * (1 + .3 * lvl),
+        kx: 0, ky: 0, hit: 0, oc: 0, ph: 0, stun: 1.5, atkT: 2, state: 'move', stateT: 0, ang: 0, spT: 0, B };
+      enemies.push(boss);
+      v.seals[v.loc] = 0;
+      shake = .5; ui.sfx('level');
+      ui.toast(`⚠️ Босс: ${B.ch} ${B.name}! Верные знаки наносят «удар знания»`, 'warn', 4500);
+      touchW();
+    }
+    function bossDown(b) {
+      const li = v.loc, first = v.bossKills[li] === 0;
+      v.bossKills[li]++;
+      const coins = Math.round(500 * L.coin * (1 + .3 * (v.bossKills[li] - 1)));
+      for (let i = 0; i < 18; i++) drops.push({ type: 'coin', x: b.x + (Math.random() - .5) * 160, y: b.y + (Math.random() - .5) * 160, val: coins / 18, t: 0 });
+      for (let i = 0; i < 3; i++) drops.push({ type: 'heart', x: b.x + (Math.random() - .5) * 100, y: b.y + (Math.random() - .5) * 100, t: 0 });
+      addXp(Math.round(300 * L.xp));
+      burst(b.x, b.y, b.B.color, 70); shake = .6;
+      ebul = []; rains = []; boss = null;
+      ui.confetti(180); ui.sfx('level');
+      HZ.gami.addXP(first ? 50 : 15);
+      HZ.gami.flag('boss1');
+      if (v.bossKills.every(x => x > 0)) HZ.gami.flag('bossAll');
+      let msg = `🏆 ${b.B.name} повержен! +${fmt(coins)} 🪙`;
+      if (first) {
+        const wk = Object.keys(WEAPONS).find(k => WEAPONS[k].unlock === li);
+        if (wk) msg += ` · В магазине открыто оружие: ${WEAPONS[wk].ico} ${WEAPONS[wk].name}`;
+        if (li + 1 < LOCS.length && li + 1 > v.maxLoc) { v.maxLoc = li + 1; msg += ` · Открыта локация ${LOCS[li + 1].ico} ${LOCS[li + 1].name}`; }
+      }
+      ui.toast(msg, 'gold', 7000);
+      touchW(); hud();
+    }
+    function efire(b, a, sp, r) { ebul.push({ x: b.x, y: b.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: r || 9, dmg: b.bdmg, life: 4, color: b.B.color }); }
+    function bossAI(b, dt) {
+      b.hit = Math.max(0, b.hit - dt);
+      if (b.stun > 0) { b.stun -= dt; return; }
+      const dx = P.x - b.x, dy = P.y - b.y, d = Math.hypot(dx, dy) || 1, phase2 = b.hp < b.max / 2;
+      if (b.state === 'tele') { b.stateT -= dt; if (b.stateT <= 0) { b.state = 'charging'; b.stateT = .55; } return; }
+      if (b.state === 'charging') { b.x += Math.cos(b.ang) * 640 * dt; b.y += Math.sin(b.ang) * 640 * dt; b.stateT -= dt; if (b.stateT <= 0) b.state = 'move'; return; }
+      if (b.state === 'spiral') { b.stateT -= dt; b.spT -= dt; if (b.spT <= 0) { b.spT = phase2 ? .04 : .06; b.ang += .42; efire(b, b.ang, 200); efire(b, b.ang + Math.PI, 200); } if (b.stateT <= 0) b.state = 'move'; return; }
+      if (b.state === 'spray') { b.stateT -= dt; b.spT -= dt; if (b.spT <= 0) { b.spT = .16; const a0 = Math.atan2(dy, dx); for (let i = -2; i <= 2; i++) efire(b, a0 + i * .16, 300, 8); } if (b.stateT <= 0) b.state = 'move'; return; }
+      if (d > b.r + 40) { b.x += dx / d * b.sp * (phase2 ? 1.25 : 1) * dt; b.y += dy / d * b.sp * (phase2 ? 1.25 : 1) * dt; }
+      b.atkT -= dt;
+      if (b.atkT > 0) return;
+      b.atkT = phase2 ? 1.5 : 2.3;
+      const atk = b.B.attacks[HZ.rand(b.B.attacks.length)];
+      if (atk === 'ring') { const n = phase2 ? 24 : 16, o = Math.random(); for (let i = 0; i < n; i++) efire(b, o + i * 6.283 / n, 230); }
+      else if (atk === 'spray') { b.state = 'spray'; b.stateT = .5; b.spT = 0; }
+      else if (atk === 'spiral') { b.state = 'spiral'; b.stateT = 1.6; b.spT = 0; }
+      else if (atk === 'charge') { b.state = 'tele'; b.stateT = .7; b.ang = Math.atan2(dy, dx); }
+      else if (atk === 'summon') { const n = phase2 ? 5 : 3; for (let i = 0; i < n; i++) { const a = i * 6.283 / n; spawnEnemy('small', b.x + Math.cos(a) * (b.r + 30), b.y + Math.sin(a) * (b.r + 30), null); } floatText(b.x, b.y - b.r - 20, 'Призыв клякс!', '#d64545'); }
+      else if (atk === 'rain') { const n = phase2 ? 9 : 6; for (let i = 0; i < n; i++) rains.push({ x: P.x + (Math.random() - .5) * 320, y: P.y + (Math.random() - .5) * 260, t: 0, delay: 1.1, r: 55, dmg: b.bdmg * 1.5 }); }
+      else if (atk === 'teleport') { const a = Math.random() * 6.283; burst(b.x, b.y, b.B.color, 20); b.x = Math.max(b.r, Math.min(WW - b.r, P.x + Math.cos(a) * 300)); b.y = Math.max(b.r, Math.min(WH - b.r, P.y + Math.sin(a) * 300)); burst(b.x, b.y, b.B.color, 20); b.stun = .4; }
+    }
+    function hitPlayer(dmg, fromX, fromY, push) {
+      if (P.inv > 0 || inCamp(P)) return false;
+      dmg = Math.round(dmg * armorMul(v));
+      v.hp -= dmg; P.inv = .8; shake = .25;
+      const ex = P.x - fromX, ey = P.y - fromY, d = Math.hypot(ex, ey) || 1;
+      P.kx = ex / d * (push || 320); P.ky = ey / d * (push || 320);
+      fx.push({ type: 'txt', x: P.x, y: P.y - 70, text: '−' + dmg, color: '#d64545', t: 0, life: .8 });
+      if (hurtSfxT <= 0) { ui.sfx('bad'); hurtSfxT = .3; }
+      return true;
     }
 
     /* --- эффекты --- */
     function floatText(x, y, text, color, life) { fx.push({ type: 'txt', x, y, text, color, t: 0, life: life || 1 }); }
     function burst(x, y, color, n) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = 60 + Math.random() * 160; fx.push({ type: 'dot', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 0, color }); } }
-
     function nearest(p, range, skip) {
       let best = null, bd = range;
       for (const e of enemies) { if (e.dead || (skip && skip.has(e))) continue; const d = Math.hypot(e.x - p.x, e.y - p.y) - e.r; if (d < bd) { bd = d; best = e; } }
       return best;
     }
+    function explode(x, y, r, dmg) {
+      waves.push({ x, y: y + 20, max: r, t: 0, col: '255,140,40' });
+      for (const e of enemies) { if (e.dead) continue; const d = Math.hypot(e.x - x, e.y - y); if (d - e.r < r) hurt(e, dmg, (e.x - x) / (d || 1) * 300, (e.y - y) / (d || 1) * 300); }
+    }
 
     /* ====== Обновление ====== */
     function update(dt) {
       const lv = heroLvl(v), mhp = maxHp(v);
-      // движение героя
       const [dx, dy] = ctl.vec();
       const sp = speedOf(v);
       P.moving = Math.hypot(dx, dy) > .05;
@@ -289,77 +401,124 @@
       v.hp = Math.min(mhp, v.hp + regenOf(v) * dt * (camp ? 8 : 1));
       v.coins += incomeOf(v) * dt;
 
+      // портал босса
+      if (!boss && seals() >= SEALS && dist(P, L.portal) < 60) startBoss();
+
       // кляксы
       spawnT -= dt; if (spawnT <= 0) { spawnT = 1; spawnTick(); }
       const aggro = 360 + 20 * v.loc;
       for (const e of enemies) {
         if (e.dead) continue;
         const ex = P.x - e.x, ey = P.y - e.y, d = Math.hypot(ex, ey) || 1;
-        let mx, my;
-        if (d < aggro && !camp) { mx = ex / d; my = ey / d; }
-        else { e.wt -= dt; if (e.wt <= 0) { e.wa = Math.random() * 6.283; e.wt = 1.5 + Math.random() * 2; } mx = Math.cos(e.wa) * .45; my = Math.sin(e.wa) * .45; }
-        e.x += (mx * e.sp + e.kx) * dt; e.y += (my * e.sp + e.ky) * dt;
+        if (e.isBoss) bossAI(e, dt);
+        else {
+          let mx, my;
+          if (d < aggro && !camp) { mx = ex / d; my = ey / d; }
+          else { e.wt -= dt; if (e.wt <= 0) { e.wa = Math.random() * 6.283; e.wt = 1.5 + Math.random() * 2; } mx = Math.cos(e.wa) * .45; my = Math.sin(e.wa) * .45; }
+          e.x += (mx * e.sp + e.kx) * dt; e.y += (my * e.sp + e.ky) * dt;
+          e.hit = Math.max(0, e.hit - dt);
+        }
         e.kx *= Math.exp(-6 * dt); e.ky *= Math.exp(-6 * dt);
+        if (e.isBoss) { e.x += e.kx * dt; e.y += e.ky * dt; }
         const dc = Math.hypot(e.x - CAMP.x, e.y - CAMP.y);
         if (dc < CAMP.r + e.r) { const k = (CAMP.r + e.r) / (dc || 1); e.x = CAMP.x + (e.x - CAMP.x) * k; e.y = CAMP.y + (e.y - CAMP.y) * k; e.wa += Math.PI; }
         e.x = Math.max(e.r, Math.min(WW - e.r, e.x)); e.y = Math.max(e.r, Math.min(WH - e.r, e.y));
-        e.hit = Math.max(0, e.hit - dt); e.oc = Math.max(0, e.oc - dt);
-        if (d < e.r + 22 && P.inv <= 0 && !camp) { // касание — урон герою
-          const dmg = Math.round(e.dmg * armorMul(v));
-          v.hp -= dmg; P.inv = .8; P.kx = -ex / d * 320; P.ky = -ey / d * 320; shake = .25;
-          fx.push({ type: 'txt', x: P.x, y: P.y - 70, text: '−' + dmg, color: '#d64545', t: 0, life: .8 });
-          if (hurtSfxT <= 0) { ui.sfx('bad'); hurtSfxT = .3; }
-        }
+        e.oc = Math.max(0, e.oc - dt);
+        if (d < e.r + 22) hitPlayer(e.dmg, e.x, e.y, e.isBoss ? 480 : 320);
       }
       hurtSfxT -= dt;
       for (let i = 0; i < enemies.length; i++) for (let j = i + 1; j < enemies.length; j++) { // не слипаются
         const a = enemies[i], b = enemies[j], ddx = b.x - a.x, ddy = b.y - a.y, dd = Math.hypot(ddx, ddy) || 1, m = a.r + b.r;
-        if (dd < m) { const push = (m - dd) / 2; a.x -= ddx / dd * push; a.y -= ddy / dd * push; b.x += ddx / dd * push; b.y += ddy / dd * push; }
+        if (dd < m) { const wa = a.isBoss ? 0 : b.isBoss ? 1 : .5, push = m - dd; a.x -= ddx / dd * push * wa; a.y -= ddy / dd * push * wa; b.x += ddx / dd * push * (1 - wa); b.y += ddy / dd * push * (1 - wa); }
       }
+      // снаряды босса и огненный дождь
+      for (const b of ebul) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; if (Math.hypot(b.x - P.x, b.y - (P.y - 24)) < b.r + 16 && hitPlayer(b.dmg, b.x, b.y, 200)) b.life = 0; if (b.x < 0 || b.y < 0 || b.x > WW || b.y > WH) b.life = 0; }
+      ebul = ebul.filter(b => b.life > 0);
+      for (const r of rains) { r.t += dt; if (r.t >= r.delay && !r.done) { r.done = true; waves.push({ x: r.x, y: r.y, max: r.r, t: 0, col: '230,80,30' }); if (Math.hypot(P.x - r.x, P.y - r.y) < r.r + 14) hitPlayer(r.dmg, r.x, r.y, 260); } }
+      rains = rains.filter(r => r.t < r.delay + .3);
       if (v.hp <= 0) return die();
 
       // оружие
-      const W = {}; Object.keys(WEAPONS).forEach(k => { if (v.wp[k] > 0) W[k] = WEAPONS[k].st(v.wp[k]); });
-      if (W.brush) {
-        wt.brush -= dt;
-        const t = nearest(P, W.brush.range);
-        if (wt.brush <= 0 && t) {
-          wt.brush = W.brush.cd;
+      const M = { cd: 1 - .04 * v.ups.rate, rg: 1 + .08 * v.ups.range };
+      const W = {}; Object.keys(WEAPONS).forEach(k => { if (v.wp[k] > 0) { W[k] = WEAPONS[k].st(v.wp[k]); wt[k] = (wt[k] || 0) - dt; } });
+      const ready = k => W[k] && wt[k] <= 0;
+      if (ready('brush')) {
+        const rg = W.brush.range * M.rg, t = nearest(P, rg);
+        if (t) {
+          wt.brush = W.brush.cd * M.cd;
           const ang = Math.atan2(t.y - P.y, t.x - P.x);
-          slashes.push({ x: P.x, y: P.y, a: ang, r: W.brush.range, t: 0 });
+          slashes.push({ x: P.x, y: P.y, a: ang, r: rg, t: 0 });
           for (const e of enemies) {
             if (e.dead) continue;
             const d = Math.hypot(e.x - P.x, e.y - P.y) - e.r, a = Math.atan2(e.y - P.y, e.x - P.x);
             let da = Math.abs(a - ang); if (da > Math.PI) da = 2 * Math.PI - da;
-            if (d < W.brush.range && da < 1.1) hurt(e, W.brush.dmg, Math.cos(a) * 160, Math.sin(a) * 160);
+            if (d < rg && da < 1.1) hurt(e, W.brush.dmg, Math.cos(a) * 160, Math.sin(a) * 160);
           }
         }
       }
-      if (W.glyph) {
-        wt.glyph -= dt;
-        if (wt.glyph <= 0) {
-          const skip = new Set(); const pool = pool0();
-          for (let i = 0; i < W.glyph.count; i++) {
-            const t = nearest(P, W.glyph.range, skip); if (!t) break; skip.add(t);
-            const a = Math.atan2(t.y - P.y, t.x - P.x);
-            shots.push({ x: P.x, y: P.y - 30, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, dmg: W.glyph.dmg, life: 1.2, target: t, txt: pool.length ? pool[HZ.rand(pool.length)].ch.slice(0, 2) : '字', kind: 'glyph' });
+      if (ready('smg')) {
+        const rg = W.smg.range * M.rg, t = nearest(P, rg);
+        if (t) { wt.smg = W.smg.cd * M.cd; const a = Math.atan2(t.y - P.y + 24, t.x - P.x) + (Math.random() - .5) * .14; shots.push({ kind: 'bullet', x: P.x, y: P.y - 30, vx: Math.cos(a) * 820, vy: Math.sin(a) * 820, dmg: W.smg.dmg, life: rg / 820 + .1 }); } else wt.smg = .1;
+      }
+      if (ready('shotgun')) {
+        const rg = W.shotgun.range * M.rg, t = nearest(P, rg);
+        if (t) {
+          wt.shotgun = W.shotgun.cd * M.cd; const a0 = Math.atan2(t.y - P.y + 24, t.x - P.x), n = W.shotgun.pellets;
+          for (let i = 0; i < n; i++) { const a = a0 + (i - (n - 1) / 2) * .13 + (Math.random() - .5) * .05; shots.push({ kind: 'pellet', x: P.x, y: P.y - 30, vx: Math.cos(a) * 680, vy: Math.sin(a) * 680, dmg: W.shotgun.dmg, life: rg / 680 + .05 }); }
+          waves.push({ x: P.x + Math.cos(a0) * 30, y: P.y - 10 + Math.sin(a0) * 30, max: 26, t: 0, col: '255,210,80' });
+        } else wt.shotgun = .15;
+      }
+      if (ready('rocket')) {
+        const rg = W.rocket.range * M.rg, t = nearest(P, rg);
+        if (t) { wt.rocket = W.rocket.cd * M.cd; const a = Math.atan2(t.y - P.y, t.x - P.x); shots.push({ kind: 'rocket', x: P.x, y: P.y - 34, vx: Math.cos(a) * 380, vy: Math.sin(a) * 380, dmg: W.rocket.dmg, blast: W.rocket.blast, life: 2.2, target: t }); } else wt.rocket = .2;
+      }
+      if (ready('lightning')) {
+        const rg = W.lightning.range * M.rg, t = nearest(P, rg);
+        if (t) {
+          wt.lightning = W.lightning.cd * M.cd;
+          const hit = new Set([t]), pts = [{ x: P.x, y: P.y - 40 }, { x: t.x, y: t.y }]; hurt(t, W.lightning.dmg, 0, 0);
+          let cur = t;
+          for (let i = 0; i < W.lightning.chains; i++) { const n2 = nearest(cur, 190, hit); if (!n2) break; hit.add(n2); pts.push({ x: n2.x, y: n2.y }); hurt(n2, W.lightning.dmg * .8, 0, 0); cur = n2; }
+          bolts.push({ pts, t: 0 });
+        } else wt.lightning = .2;
+      }
+      if (W.beam) {
+        if (beam) {
+          beam.t -= dt; beam.tick -= dt;
+          const t = nearest(P, W.beam.range * M.rg); if (t) beam.a = Math.atan2(t.y - P.y + 24, t.x - P.x);
+          if (beam.tick <= 0) {
+            beam.tick = .1; const rg = W.beam.range * M.rg, ax = P.x, ay = P.y - 30, bx = ax + Math.cos(beam.a) * rg, by = ay + Math.sin(beam.a) * rg;
+            for (const e of enemies) if (!e.dead && segDist(e.x, e.y, ax, ay, bx, by) < e.r + 10) hurt(e, W.beam.dps * .1, 0, 0);
           }
-          wt.glyph = skip.size ? W.glyph.cd : .2;
+          if (beam.t <= 0) { beam = null; wt.beam = W.beam.cd * M.cd; }
+        } else if (wt.beam <= 0) {
+          const t = nearest(P, W.beam.range * M.rg);
+          if (t) beam = { t: W.beam.dur, tick: 0, a: Math.atan2(t.y - P.y, t.x - P.x) }; else wt.beam = .3;
         }
+      }
+      if (ready('glyph')) {
+        const skip = new Set(), pool = pool0(), rg = W.glyph.range * M.rg;
+        for (let i = 0; i < W.glyph.count; i++) {
+          const t = nearest(P, rg, skip); if (!t) break; skip.add(t);
+          const a = Math.atan2(t.y - P.y, t.x - P.x);
+          shots.push({ kind: 'glyph', x: P.x, y: P.y - 30, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, dmg: W.glyph.dmg, life: 1.2, target: t, txt: pool.length ? pool[HZ.rand(pool.length)].ch.slice(0, 2) : '字' });
+        }
+        wt.glyph = skip.size ? W.glyph.cd * M.cd : .2;
       }
       if (W.orbit) {
         orbitA += dt * 2.6;
+        const rad = W.orbit.radius * M.rg;
         for (let i = 0; i < W.orbit.n; i++) {
-          const a = orbitA + i * 6.283 / W.orbit.n, ox = P.x + Math.cos(a) * W.orbit.radius, oy = P.y - 24 + Math.sin(a) * W.orbit.radius;
+          const a = orbitA + i * 6.283 / W.orbit.n, ox = P.x + Math.cos(a) * rad, oy = P.y - 24 + Math.sin(a) * rad;
           for (const e of enemies) if (!e.dead && e.oc <= 0 && Math.hypot(e.x - ox, e.y - oy) < e.r + 14) { e.oc = .35; hurt(e, W.orbit.dmg, (e.x - P.x) * .8, (e.y - P.y) * .8); }
         }
       }
-      if (W.gong) {
-        wt.gong -= dt;
-        if (wt.gong <= 0 && nearest(P, W.gong.radius)) {
-          wt.gong = W.gong.cd; waves.push({ x: P.x, y: P.y, max: W.gong.radius, t: 0 }); ui.sfx('click');
-          for (const e of enemies) { if (e.dead) continue; const d = Math.hypot(e.x - P.x, e.y - P.y) || 1; if (d - e.r < W.gong.radius) hurt(e, W.gong.dmg, (e.x - P.x) / d * 420, (e.y - P.y) / d * 420); }
-        }
+      if (ready('gong')) {
+        const rad = W.gong.radius * M.rg;
+        if (nearest(P, rad)) {
+          wt.gong = W.gong.cd * M.cd; waves.push({ x: P.x, y: P.y, max: rad, t: 0, col: '242,181,58' }); ui.sfx('click');
+          for (const e of enemies) { if (e.dead) continue; const d = Math.hypot(e.x - P.x, e.y - P.y) || 1; if (d - e.r < rad) hurt(e, W.gong.dmg, (e.x - P.x) / d * 420, (e.y - P.y) / d * 420); }
+        } else wt.gong = .2;
       }
       // питомцы стреляют
       v.pets.forEach((li2, i) => {
@@ -368,16 +527,21 @@
         const pp = trail[Math.min(trail.length - 1, (i + 1) * 16)] || P;
         const t = nearest(pp, 380);
         petT[i] = t ? 1.6 : .3;
-        if (t) { const a = Math.atan2(t.y - pp.y, t.x - pp.x); shots.push({ x: pp.x, y: pp.y - 20, vx: Math.cos(a) * 460, vy: Math.sin(a) * 460, dmg: 4 + 1.5 * lv, life: 1, target: t, kind: 'pet' }); }
+        if (t) { const a = Math.atan2(t.y - pp.y, t.x - pp.x); shots.push({ kind: 'pet', x: pp.x, y: pp.y - 20, vx: Math.cos(a) * 460, vy: Math.sin(a) * 460, dmg: 4 + 1.5 * lv, life: 1, target: t }); }
       });
-      // снаряды
+      // снаряды героя
       for (const s of shots) {
-        if (s.target && !s.target.dead) { const a = Math.atan2(s.target.y - s.y, s.target.x - s.x), sp2 = Math.hypot(s.vx, s.vy); s.vx += (Math.cos(a) * sp2 - s.vx) * Math.min(1, dt * 6); s.vy += (Math.sin(a) * sp2 - s.vy) * Math.min(1, dt * 6); }
+        if (s.target && !s.target.dead) { const a = Math.atan2(s.target.y - s.y, s.target.x - s.x), sp2 = Math.hypot(s.vx, s.vy), k = s.kind === 'rocket' ? 3 : 6; s.vx += (Math.cos(a) * sp2 - s.vx) * Math.min(1, dt * k); s.vy += (Math.sin(a) * sp2 - s.vy) * Math.min(1, dt * k); }
         s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-        for (const e of enemies) if (!e.dead && Math.hypot(e.x - s.x, e.y - s.y) < e.r + 10) { hurt(e, s.dmg, s.vx * .25, s.vy * .25); s.life = 0; break; }
+        for (const e of enemies) if (!e.dead && Math.hypot(e.x - s.x, e.y - s.y) < e.r + (s.kind === 'rocket' ? 14 : 8)) {
+          if (s.kind === 'rocket') explode(s.x, s.y, s.blast * M.rg, s.dmg); else hurt(e, s.dmg, s.vx * .2, s.vy * .2);
+          s.life = 0; break;
+        }
+        if (s.life <= 0 && s.kind === 'rocket' && !s.boom) { s.boom = true; explode(s.x, s.y, s.blast * M.rg, s.dmg); }
       }
       shots = shots.filter(s => s.life > 0);
       enemies = enemies.filter(e => !e.dead);
+      if (boss && boss.dead) boss = null;
 
       // монеты и сердца
       const mr = magnetR(v);
@@ -385,11 +549,7 @@
         d.t += dt;
         const dd = Math.hypot(P.x - d.x, P.y - 20 - d.y);
         if (dd < mr) { const k = Math.min(1, dt * 7); d.x += (P.x - d.x) * k; d.y += (P.y - 20 - d.y) * k; }
-        if (dd < 26) {
-          d.got = true;
-          if (d.type === 'coin') v.coins += d.val;
-          else { v.hp = Math.min(mhp, v.hp + mhp * .25); floatText(P.x, P.y - 80, '+❤️', '#d64545'); }
-        }
+        if (dd < 26) { d.got = true; if (d.type === 'coin') v.coins += d.val; else { v.hp = Math.min(mhp, v.hp + mhp * .25); floatText(P.x, P.y - 80, '+❤️', '#d64545'); } }
       }
       drops = drops.filter(d => !d.got && d.t < 45);
 
@@ -400,8 +560,8 @@
           if (b.dead || b.pop) continue;
           if (Math.hypot(b.x - P.x, b.y - P.y + 10) < 30 + b.r + mag) { if (b.ok) onRight(b); else onWrong(b); break; }
         }
-        if (!hintShown && (performance.now() - quest.t0) / 1000 > Math.max(1.5, 9 - 1.2 * v.ups.wisdom)) { hintShown = true; banner(); }
-        if (bubbles.length && bubbles.every(b => Math.hypot(b.x - P.x, b.y - P.y) > 1500)) newRound(); // ушли слишком далеко — новые знаки рядом
+        if (!hintShown && (performance.now() - quest.t0) / 1000 > Math.max(1.5, 9 - 1.2 * v.ups.wisdom)) hintShown = true;
+        if (bubbles.length && bubbles.every(b => Math.hypot(b.x - P.x, b.y - P.y) > 1500)) newRound();
       }
       bubbles.forEach(b => { if (b.dead) b.dead += dt * 2; if (b.pop) b.pop += dt * 2; });
       bubbles = bubbles.filter(b => b.dead < 1 && b.pop < 1.2);
@@ -409,9 +569,8 @@
       fx = fx.filter(f => f.t < (f.life || (f.type === 'num' ? .6 : 1)));
       slashes.forEach(s => { s.t += dt; }); slashes = slashes.filter(s => s.t < .22);
       waves.forEach(w => { w.t += dt; }); waves = waves.filter(w => w.t < .45);
+      bolts.forEach(b => { b.t += dt; }); bolts = bolts.filter(b => b.t < .18);
       shake = Math.max(0, shake - dt);
-
-      // камера
       cam.x = Math.max(0, Math.min(WW - VW, P.x - VW / 2));
       cam.y = Math.max(0, Math.min(WH - VH, P.y - VH / 2));
     }
@@ -421,16 +580,16 @@
       const loss = Math.floor(v.coins * .1); v.coins -= loss;
       v.hp = maxHp(v); combo = 0;
       P.x = CAMP.x; P.y = CAMP.y + 40; P.inv = 2.5; P.kx = P.ky = 0; trail.length = 0;
-      enemies = enemies.filter(e => Math.hypot(e.x - CAMP.x, e.y - CAMP.y) > 800);
-      ui.toast(`💀 Кляксы одолели вас! −${fmt(loss)} 🪙. Вы снова в лагере — усильте героя в магазине.`, 'warn', 4500);
+      let msg = `💀 Вас одолели! −${fmt(loss)} 🪙. Вы снова в лагере — усильте героя и оружие в магазине.`;
+      if (boss) { boss.dead = true; boss = null; v.seals[v.loc] = SEALS; msg += ' Портал босса остаётся открытым.'; }
+      enemies = enemies.filter(e => !e.dead && Math.hypot(e.x - CAMP.x, e.y - CAMP.y) > 800);
+      ebul = []; rains = []; beam = null;
+      ui.toast(msg, 'warn', 5000);
       touchW(); newRound(); hud();
     }
 
     /* ====== Отрисовка ====== */
-    function drawBlob(e, now, sx, sy) {
-      const r = e.r, wob = now / 300 + e.ph;
-      ctx.save(); ctx.translate(sx, sy);
-      ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(0, r * .85, r * .9, r * .28, 0, 0, 6.283); ctx.fill();
+    function blobPath(r, wob) {
       ctx.beginPath();
       for (let k = 0; k <= 18; k++) {
         const a = k / 18 * 6.283, q = r * (1 + .08 * Math.sin(a * 3 + wob) + .05 * Math.sin(a * 5 - wob * 1.3));
@@ -438,16 +597,26 @@
         k ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
       }
       ctx.closePath();
-      ctx.fillStyle = e.hit > 0 ? '#ffffff' : L.blob; ctx.fill();
-      if (e.type === 'king') { ctx.lineWidth = 4; ctx.strokeStyle = '#f2b53a'; ctx.stroke(); }
-      ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.beginPath(); ctx.ellipse(-r * .35, -r * .4, r * .3, r * .18, -.5, 0, 6.283); ctx.fill();
-      // глаза смотрят на героя
-      const la = Math.atan2(P.y - e.y, P.x - e.x), ey = e.glyph ? -r * .42 : -r * .15, es = Math.max(3, r * .2);
+    }
+    function eyes(e, r, ey, angry) {
+      const la = Math.atan2(P.y - e.y, P.x - e.x), es = Math.max(3, r * .2);
       [-1, 1].forEach(sd => {
         const exx = sd * r * .32;
-        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(exx, ey, es, 0, 6.283); ctx.fill();
-        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(exx + Math.cos(la) * es * .45, ey + Math.sin(la) * es * .45, es * .5, 0, 6.283); ctx.fill();
+        ctx.fillStyle = angry ? '#ffd2d2' : '#fff'; ctx.beginPath(); ctx.arc(exx, ey, es, 0, 6.283); ctx.fill();
+        ctx.fillStyle = angry ? '#b3001b' : '#111'; ctx.beginPath(); ctx.arc(exx + Math.cos(la) * es * .45, ey + Math.sin(la) * es * .45, es * .5, 0, 6.283); ctx.fill();
+        if (angry) { ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(exx - es * sd * 1.2, ey - es * 1.5); ctx.lineTo(exx + es * sd * .6, ey - es * .9); ctx.stroke(); }
       });
+    }
+    function drawBlob(e, now, sx, sy) {
+      const r = e.r;
+      ctx.save(); ctx.translate(sx, sy);
+      ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(0, r * .85, r * .9, r * .28, 0, 0, 6.283); ctx.fill();
+      blobPath(r, now / 300 + e.ph);
+      ctx.fillStyle = L.blob; ctx.fill();
+      if (e.hit > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(.75, e.hit * 6)})`; ctx.fill(); }
+      if (e.type === 'king') { ctx.lineWidth = 4; ctx.strokeStyle = '#f2b53a'; ctx.stroke(); }
+      ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.beginPath(); ctx.ellipse(-r * .35, -r * .4, r * .3, r * .18, -.5, 0, 6.283); ctx.fill();
+      eyes(e, r, e.glyph ? -r * .42 : -r * .15, false);
       if (e.glyph) {
         const t = e.glyph.ch.slice(0, 2);
         ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(r * (t.length > 1 ? .62 : .9))}px "Noto Serif SC","Songti SC",serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -457,9 +626,76 @@
       if (e.hp < e.max) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(-r, -r - 12, r * 2, 5); ctx.fillStyle = '#e04b4b'; ctx.fillRect(-r, -r - 12, r * 2 * Math.max(0, e.hp / e.max), 5); }
       ctx.restore();
     }
+    function drawBoss(b, now, sx, sy) {
+      const r = b.r;
+      if (b.state === 'tele') { // предупреждение о рывке
+        ctx.strokeStyle = 'rgba(214,69,69,.6)'; ctx.lineWidth = r * 1.2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(b.ang) * 360, sy + Math.sin(b.ang) * 360); ctx.stroke();
+      }
+      ctx.save(); ctx.translate(sx, sy);
+      const pulse = 1 + Math.sin(now / 200) * .03;
+      ctx.scale(pulse, pulse);
+      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(0, r * .9, r, r * .3, 0, 0, 6.283); ctx.fill();
+      ctx.shadowColor = b.B.color; ctx.shadowBlur = 30;
+      blobPath(r, now / 220);
+      ctx.fillStyle = b.B.color; ctx.fill();
+      if (b.hit > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(.45, b.hit * 4)})`; ctx.fill(); }
+      ctx.shadowBlur = 0; ctx.lineWidth = 5; ctx.strokeStyle = b.hp < b.max / 2 ? '#ff3b3b' : '#f2b53a'; ctx.stroke();
+      eyes(b, r, -r * .38, true);
+      ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.font = `700 ${Math.round(r * .8)}px "Noto Serif SC","Songti SC",serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(b.B.ch, 0, r * .3);
+      const hat = emo(b.B.hat, 40); ctx.drawImage(hat, -hat.width / 2, -r - hat.height + 10);
+      if (b.stun > 0) { ctx.font = '700 18px system-ui'; ctx.fillStyle = '#fff'; ctx.fillText('💫', 0, -r - 50); }
+      ctx.restore();
+    }
+    function drawPy(text, cx, cy, size) { // пиньинь с цветом тонов, по центру
+      const parts = (text || '').split(/\s+/).filter(Boolean);
+      ctx.font = `700 ${size}px system-ui, sans-serif`;
+      const sp = ctx.measureText(' ').width, ws = parts.map(p => ctx.measureText(p).width), tw = ws.reduce((a, b) => a + b, 0) + sp * (parts.length - 1);
+      let x = cx - tw / 2; ctx.textAlign = 'left';
+      parts.forEach((p, i) => { ctx.fillStyle = TONE_COL[HZ.toneOf(p) - 1]; ctx.fillText(p, x, cy); x += ws[i] + sp; });
+      ctx.textAlign = 'center';
+    }
+    function fit(text, maxW) { if (ctx.measureText(text).width <= maxW) return text; let t = text; while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1); return t + '…'; }
+    function drawQuest(now) { // задание прямо на экране
+      if (!quest) return;
+      const e = quest.e, show = v.mode !== 'hard';
+      const w = narrow ? VW - 20 : 460, x0 = (VW - w) / 2, y0 = narrow ? 62 : 8, hh = 70;
+      ctx.fillStyle = 'rgba(255,253,246,.95)'; ctx.strokeStyle = quest.done ? '#1f9d63' : '#c9a35b'; ctx.lineWidth = 3;
+      rr(ctx, x0, y0, w, hh, 14); ctx.fill(); ctx.stroke();
+      ctx.textBaseline = 'middle';
+      if (show) {
+        const ch = e.ch, fs = ch.length > 2 ? 26 : ch.length === 2 ? 34 : 44, bw = Math.max(70, fs * ch.length + 20);
+        ctx.fillStyle = '#fbf0d3'; rr(ctx, x0 + 8, y0 + 8, bw, hh - 16, 10); ctx.fill();
+        ctx.fillStyle = '#2a2018'; ctx.font = `700 ${fs}px "Noto Serif SC","Songti SC",serif`; ctx.textAlign = 'center'; ctx.fillText(ch, x0 + 8 + bw / 2, y0 + hh / 2 + 2);
+        const tx = x0 + bw + 18, tw = w - bw - 30;
+        ctx.textAlign = 'left'; ctx.fillStyle = '#7a726a'; ctx.font = '600 12px system-ui, sans-serif'; ctx.fillText(quest.done ? '✓ Найдено!' : 'Найди этот знак на карте:', tx, y0 + 16);
+        drawPy(e.py, tx + Math.min(tw, 400) / 2, y0 + 37, 17);
+        ctx.textAlign = 'left'; ctx.fillStyle = '#231f1c'; ctx.font = '600 14px system-ui, sans-serif'; ctx.fillText(fit(firstGloss(e.m), tw), tx, y0 + 57);
+      } else {
+        ctx.textAlign = 'center'; ctx.fillStyle = '#7a726a'; ctx.font = '600 12px system-ui, sans-serif';
+        ctx.fillText(quest.done ? '✓ Найдено!' : quest.type === 'm' ? 'Найди знак со значением:' : 'Найди знак с чтением:', VW / 2, y0 + 14);
+        if (quest.type === 'm') { ctx.fillStyle = '#e4572e'; ctx.font = '700 22px system-ui, sans-serif'; ctx.fillText(fit(firstGloss(e.m), w - 20), VW / 2, y0 + 38); }
+        else drawPy(e.py, VW / 2, y0 + 38, 24);
+        if (hintShown) { if (quest.type === 'm') drawPy(e.py, VW / 2, y0 + 58, 14); else { ctx.fillStyle = '#7a726a'; ctx.font = '600 13px system-ui, sans-serif'; ctx.fillText(fit(firstGloss(e.m), w - 20), VW / 2, y0 + 58); } }
+        else { ctx.fillStyle = '#a39d95'; ctx.font = '12px system-ui, sans-serif'; ctx.fillText(`подсказка через ${Math.max(0, Math.ceil(Math.max(1.5, 9 - 1.2 * v.ups.wisdom) - (now - quest.t0) / 1000))} с · награда ×2`, VW / 2, y0 + 58); }
+      }
+      // печати портала
+      ctx.textAlign = 'right'; ctx.font = '700 12px system-ui, sans-serif'; ctx.fillStyle = seals() >= SEALS ? '#7a4dc9' : '#7a726a';
+      ctx.fillText(boss ? '⚔️ босс' : `🌀 ${seals()}/${SEALS}`, x0 + w - 10, y0 + 14);
+      // ошибка: что это был за знак
+      if (reveal && now - reveal.t < 3500) {
+        const msg = `«${reveal.e.ch}» — ${reveal.e.py} — ${firstGloss(reveal.e.m)}`;
+        ctx.font = '700 14px system-ui, sans-serif'; ctx.textAlign = 'center';
+        const mw2 = Math.min(w, ctx.measureText(msg).width + 24);
+        ctx.fillStyle = 'rgba(214,69,69,.92)'; rr(ctx, VW / 2 - mw2 / 2, y0 + hh + 6, mw2, 26, 10); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.fillText(fit(msg, mw2 - 16), VW / 2, y0 + hh + 19);
+      }
+      ctx.textAlign = 'center';
+    }
 
     function draw(now) {
-      const ox = cam.x + (shake ? (Math.random() - .5) * 10 * shake * 4 : 0), oy = cam.y + (shake ? (Math.random() - .5) * 10 * shake * 4 : 0);
+      const ox = cam.x + (shake ? (Math.random() - .5) * 40 * shake : 0), oy = cam.y + (shake ? (Math.random() - .5) * 40 * shake : 0);
       ctx.clearRect(0, 0, VW, VH);
       // земля
       const T = 64, i0 = Math.floor(ox / T), j0 = Math.floor(oy / T);
@@ -471,37 +707,62 @@
       ctx.fillStyle = 'rgba(255,236,190,.45)'; ctx.beginPath(); ctx.arc(cx, cy, CAMP.r, 0, 6.283); ctx.fill();
       ctx.setLineDash([10, 8]); ctx.strokeStyle = 'rgba(160,110,40,.6)'; ctx.lineWidth = 3; ctx.stroke(); ctx.setLineDash([]);
       ctx.drawImage(emo('🏕️', 46), cx - 70, cy - 60); ctx.drawImage(emo('🔥', 30 + Math.round(Math.sin(now / 120) * 2)), cx + 10, cy - 10);
+      // портал босса
+      const px = L.portal.x - ox, py = L.portal.y - oy, open = seals() >= SEALS && !boss;
+      ctx.save(); ctx.translate(px, py);
+      ctx.fillStyle = open ? 'rgba(122,77,201,.35)' : 'rgba(80,80,80,.25)'; ctx.beginPath(); ctx.arc(0, 0, 58, 0, 6.283); ctx.fill();
+      ctx.lineWidth = 5; ctx.strokeStyle = open ? '#9b6bff' : 'rgba(80,80,80,.6)';
+      for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(0, 0, 22 + k * 14, now / (300 - k * 60) + k, now / (300 - k * 60) + k + 4); ctx.stroke(); }
+      ctx.fillStyle = open ? '#fff' : '#555'; ctx.font = '700 26px "Noto Serif SC",serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(L.boss.ch, 0, 2);
+      ctx.font = '700 13px system-ui, sans-serif'; ctx.fillStyle = open ? '#4b2385' : '#444';
+      ctx.fillText(boss ? 'Бой идёт!' : open ? 'Войдите — босс!' : `🔒 ${seals()}/${SEALS} печатей`, 0, 76);
+      ctx.restore();
       // украшения
       for (const d of deco) { const x = d.x - ox, y = d.y - oy; if (x < -40 || y < -40 || x > VW + 40 || y > VH + 40) continue; const im = emo(d.e, d.s); ctx.drawImage(im, x - im.width / 2, y - im.height / 2); }
-      // граница мира
       ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 6; ctx.strokeRect(-ox, -oy, WW, WH);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      // огненный дождь — предупреждения
+      for (const r of rains) { if (r.done) continue; const k = r.t / r.delay; ctx.fillStyle = `rgba(230,60,30,${.15 + .25 * k})`; ctx.beginPath(); ctx.arc(r.x - ox, r.y - oy, r.r, 0, 6.283); ctx.fill(); ctx.strokeStyle = 'rgba(230,60,30,.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(r.x - ox, r.y - oy, r.r * k, 0, 6.283); ctx.stroke(); }
       // монеты и сердца
       for (const d of drops) { const im = emo(d.type === 'coin' ? '🪙' : '❤️', d.type === 'coin' ? 18 : 22); ctx.drawImage(im, d.x - ox - im.width / 2, d.y - oy - im.height / 2 + Math.sin(now / 200 + d.x) * 2); }
       // знаки задания
-      const glow = v.ups.wisdom >= 5 && hintShown;
+      const glow = (v.mode !== 'hard') || (v.ups.wisdom >= 5 && hintShown);
       for (const b of bubbles) {
         const sx = b.x - ox, sy = b.y - oy;
         if (sx < -60 || sy < -60 || sx > VW + 60 || sy > VH + 60) continue;
         const bob = Math.sin(now / 400 + b.ph) * 4, a = b.dead ? Math.max(0, 1 - b.dead) : b.pop ? Math.max(0, 1 - b.pop) : 1, sc = b.pop ? 1 + b.pop * .5 : 1;
         ctx.save(); ctx.globalAlpha = a; ctx.translate(sx, sy + bob); ctx.scale(sc, sc);
         ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(0, b.r + 6, b.r * .8, 8, 0, 0, 6.283); ctx.fill();
-        if (b.ok && glow && !b.pop) { ctx.shadowColor = '#ffd34d'; ctx.shadowBlur = 26; }
+        if (b.ok && glow && v.mode === 'hard' && !b.pop) { ctx.shadowColor = '#ffd34d'; ctx.shadowBlur = 26; }
         ctx.fillStyle = b.dead ? '#f6c7c7' : '#fffdf6'; ctx.strokeStyle = b.dead ? '#d64545' : '#c9a35b'; ctx.lineWidth = 3;
         rr(ctx, -b.r, -b.r + 4, b.r * 2, b.r * 2 - 8, 16); ctx.fill(); ctx.shadowBlur = 0; ctx.stroke();
         const lb = b.e.ch; ctx.fillStyle = '#2a2018'; ctx.font = `700 ${lb.length > 2 ? 22 : lb.length === 2 ? 30 : 38}px "Noto Serif SC","Songti SC",serif`;
         ctx.fillText(lb, 0, 2);
         ctx.restore();
       }
-      // кляксы
-      for (const e of enemies) { const sx = e.x - ox, sy = e.y - oy; if (sx < -80 || sy < -80 || sx > VW + 80 || sy > VH + 80) continue; drawBlob(e, now, sx, sy); }
-      // волны гонга и взмахи кисти
-      for (const w of waves) { const k = w.t / .45; ctx.strokeStyle = `rgba(242,181,58,${1 - k})`; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(w.x - ox, w.y - oy - 20, w.max * k, 0, 6.283); ctx.stroke(); }
+      // кляксы и босс
+      for (const e of enemies) { const sx = e.x - ox, sy = e.y - oy; if (sx < -120 || sy < -120 || sx > VW + 120 || sy > VH + 120) continue; if (e.isBoss) drawBoss(e, now, sx, sy); else drawBlob(e, now, sx, sy); }
+      // снаряды босса
+      for (const b of ebul) { ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc(b.x - ox, b.y - oy, b.r, 0, 6.283); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2; ctx.stroke(); }
+      // волны, взмахи, молнии, луч
+      for (const w of waves) { const k = w.t / .45; ctx.strokeStyle = `rgba(${w.col || '242,181,58'},${1 - k})`; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(w.x - ox, w.y - oy - 20, w.max * k, 0, 6.283); ctx.stroke(); }
       for (const s of slashes) { const k = s.t / .22; ctx.strokeStyle = `rgba(30,30,30,${.75 * (1 - k)})`; ctx.lineWidth = 10 * (1 - k) + 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(s.x - ox, s.y - oy - 24, s.r * (.6 + .4 * k), s.a - 1.0, s.a + 1.0); ctx.stroke(); }
-      // снаряды
+      for (const b of bolts) {
+        ctx.strokeStyle = `rgba(140,200,255,${1 - b.t / .18})`; ctx.lineWidth = 4; ctx.beginPath();
+        b.pts.forEach((p, i) => { if (!i) { ctx.moveTo(p.x - ox, p.y - oy); return; } const q = b.pts[i - 1]; for (let s = 1; s <= 4; s++) { const k = s / 4; ctx.lineTo(q.x + (p.x - q.x) * k - ox + (s < 4 ? (Math.random() - .5) * 18 : 0), q.y + (p.y - q.y) * k - oy + (s < 4 ? (Math.random() - .5) * 18 : 0)); } });
+        ctx.stroke();
+      }
+      if (beam && v.wp.beam > 0) {
+        const rg = WEAPONS.beam.st(v.wp.beam).range * (1 + .08 * v.ups.range), ax = P.x - ox, ay = P.y - 30 - oy, bx = ax + Math.cos(beam.a) * rg, by = ay + Math.sin(beam.a) * rg;
+        ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,120,40,.45)'; ctx.lineWidth = 22; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,240,180,.95)'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      }
+      // снаряды героя
       for (const s of shots) {
         const sx = s.x - ox, sy = s.y - oy;
         if (s.kind === 'glyph') { ctx.fillStyle = '#fffdf6'; ctx.strokeStyle = '#c9a35b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx, sy, 15, 0, 6.283); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#b3261e'; ctx.font = `700 ${s.txt.length > 1 ? 11 : 17}px "Noto Serif SC",serif`; ctx.fillText(s.txt, sx, sy + 1); }
+        else if (s.kind === 'rocket') { const a = Math.atan2(s.vy, s.vx); ctx.save(); ctx.translate(sx, sy); ctx.rotate(a); ctx.fillStyle = '#ff8a30'; ctx.beginPath(); ctx.arc(-14, 0, 6 + Math.random() * 3, 0, 6.283); ctx.fill(); ctx.fillStyle = '#555'; rr(ctx, -10, -5, 22, 10, 4); ctx.fill(); ctx.fillStyle = '#d64545'; ctx.beginPath(); ctx.moveTo(12, -5); ctx.lineTo(18, 0); ctx.lineTo(12, 5); ctx.fill(); ctx.restore(); }
+        else if (s.kind === 'bullet' || s.kind === 'pellet') { ctx.strokeStyle = s.kind === 'bullet' ? '#ffe066' : '#ffb347'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - s.vx * .02, sy - s.vy * .02); ctx.stroke(); }
         else { ctx.fillStyle = '#ffd34d'; ctx.beginPath(); ctx.arc(sx, sy, 6, 0, 6.283); ctx.fill(); }
       }
       // питомцы
@@ -523,27 +784,41 @@
       ctx.restore();
       // фонари
       const ow = v.wp.orbit > 0 ? WEAPONS.orbit.st(v.wp.orbit) : null;
-      if (ow) for (let i = 0; i < ow.n; i++) { const a = orbitA + i * 6.283 / ow.n, lim = emo('🏮', 24); ctx.drawImage(lim, P.x - ox + Math.cos(a) * ow.radius - lim.width / 2, P.y - oy - 24 + Math.sin(a) * ow.radius - lim.height / 2); }
+      if (ow) { const rad = ow.radius * (1 + .08 * v.ups.range); for (let i = 0; i < ow.n; i++) { const a = orbitA + i * 6.283 / ow.n, lim = emo('🏮', 24); ctx.drawImage(lim, P.x - ox + Math.cos(a) * rad - lim.width / 2, P.y - oy - 24 + Math.sin(a) * rad - lim.height / 2); } }
+      // стрелка к нужному знаку (режим «Знак на экране»)
+      const tb = bubbles.find(b => b.ok && !b.pop && !b.dead);
+      if (tb && v.mode !== 'hard' && quest && !quest.done) {
+        const a = Math.atan2(tb.y - P.y, tb.x - P.x), d = Math.hypot(tb.x - P.x, tb.y - P.y);
+        if (d > 120) {
+          const ax = P.x - ox + Math.cos(a) * 66, ay = P.y - oy - 30 + Math.sin(a) * 66, pul = 1 + Math.sin(now / 150) * .12;
+          ctx.save(); ctx.translate(ax, ay); ctx.rotate(a); ctx.scale(pul, pul);
+          ctx.fillStyle = '#f2b53a'; ctx.strokeStyle = '#7a4a00'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-8, -11); ctx.lineTo(-3, 0); ctx.lineTo(-8, 11); ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
+      }
       // эффекты
       for (const f of fx) {
         const sx = f.x - ox, sy = f.y - oy;
         if (f.type === 'txt') { ctx.globalAlpha = Math.max(0, 1 - f.t / (f.life || 1)); ctx.fillStyle = f.color; ctx.font = '700 20px system-ui, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.strokeText(f.text, sx, sy - f.t * 40); ctx.fillText(f.text, sx, sy - f.t * 40); }
-        else if (f.type === 'num') { ctx.globalAlpha = 1 - f.t / .6; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 3; ctx.font = '700 14px system-ui, sans-serif'; ctx.strokeText(f.text, sx, sy - f.t * 50); ctx.fillText(f.text, sx, sy - f.t * 50); }
+        else if (f.type === 'num') { ctx.globalAlpha = 1 - f.t / .6; ctx.fillStyle = f.crit ? '#ffd34d' : '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 3; ctx.font = `700 ${f.crit ? 18 : 14}px system-ui, sans-serif`; ctx.strokeText(f.text, sx, sy - f.t * 50); ctx.fillText(f.text, sx, sy - f.t * 50); }
         else { ctx.globalAlpha = 1 - f.t; ctx.fillStyle = f.color; ctx.fillRect(sx, sy, 5, 5); }
       }
       ctx.globalAlpha = 1;
-      // указатели на знаки за краем экрана
-      for (const b of bubbles) {
-        if (b.dead || b.pop) continue;
-        const sx = b.x - ox, sy = b.y - oy;
-        if (sx > 0 && sy > 0 && sx < VW && sy < VH) continue;
+      // указатели на знаки и портал за краем экрана
+      const edge = (wx, wy, label, col, font) => {
+        const sx = wx - ox, sy = wy - oy;
+        if (sx > 0 && sy > 0 && sx < VW && sy < VH) return;
         const dx = sx - VW / 2, dy = sy - VH / 2, k = Math.min((VW / 2 - 28) / Math.abs(dx || 1e-6), (VH / 2 - 28) / Math.abs(dy || 1e-6));
         const ix = VW / 2 + dx * k, iy = VH / 2 + dy * k, a = Math.atan2(dy, dx);
-        ctx.fillStyle = 'rgba(255,253,246,.92)'; ctx.strokeStyle = '#c9a35b'; ctx.lineWidth = 2;
+        ctx.fillStyle = col; ctx.strokeStyle = '#c9a35b'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(ix + Math.cos(a) * 26, iy + Math.sin(a) * 26); ctx.lineTo(ix + Math.cos(a + 2.5) * 18, iy + Math.sin(a + 2.5) * 18); ctx.lineTo(ix + Math.cos(a - 2.5) * 18, iy + Math.sin(a - 2.5) * 18); ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.beginPath(); ctx.arc(ix, iy, 18, 0, 6.283); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#2a2018'; ctx.font = `700 ${b.e.ch.length > 1 ? 11 : 16}px "Noto Serif SC",serif`; ctx.fillText(b.e.ch.slice(0, 3), ix, iy + 1);
-      }
+        ctx.fillStyle = '#2a2018'; ctx.font = font; ctx.fillText(label, ix, iy + 1);
+      };
+      for (const b of bubbles) if (!b.dead && !b.pop) edge(b.x, b.y, b.e.ch.slice(0, 3), b.ok && v.mode !== 'hard' ? 'rgba(255,224,130,.97)' : 'rgba(255,253,246,.92)', `700 ${b.e.ch.length > 1 ? 11 : 16}px "Noto Serif SC",serif`);
+      if (seals() >= SEALS && !boss) edge(L.portal.x, L.portal.y, '🌀', 'rgba(200,170,255,.95)', '16px serif');
+      if (boss) edge(boss.x, boss.y, boss.B.ch, 'rgba(255,170,170,.95)', '700 16px "Noto Serif SC",serif');
       // полоски здоровья и опыта
       const mhp = maxHp(v), xl = heroLvl(v), xa = xpAt(xl), xb = xpAt(xl + 1);
       ctx.textAlign = 'left';
@@ -551,16 +826,26 @@
       ctx.fillStyle = '#5a1f1f'; ctx.fillRect(18, 17, 198, 13); ctx.fillStyle = '#e04b4b'; ctx.fillRect(18, 17, 198 * Math.max(0, v.hp / mhp), 13);
       ctx.fillStyle = '#2a2a3a'; ctx.fillRect(18, 35, 198, 9); ctx.fillStyle = '#f2b53a'; ctx.fillRect(18, 35, 198 * Math.min(1, (v.xp - xa) / (xb - xa)), 9);
       ctx.fillStyle = '#fff'; ctx.font = '700 11px system-ui, sans-serif'; ctx.fillText(`❤ ${Math.ceil(v.hp)} / ${mhp}`, 22, 24); ctx.fillText(`Ур. ${xl}`, 22, 40);
-      ctx.textAlign = 'right'; ctx.font = '700 13px system-ui, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.strokeText(`${L.ico} ${L.name}`, VW - 12, 22); ctx.fillStyle = '#fff'; ctx.fillText(`${L.ico} ${L.name}`, VW - 12, 22); ctx.textAlign = 'left';
+      ctx.textAlign = 'right'; ctx.font = '700 13px system-ui, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.strokeText(`${L.ico} ${L.name}`, VW - 12, narrow ? 22 : VH - 120); ctx.fillStyle = '#fff'; ctx.fillText(`${L.ico} ${L.name}`, VW - 12, narrow ? 22 : VH - 120);
+      ctx.textAlign = 'center';
+      drawQuest(now);
+      // полоса здоровья босса
+      if (boss) {
+        const bw = narrow ? VW - 170 : VW * .5, bx0 = narrow ? 12 : (VW - bw) / 2 - 60, by0 = VH - 40;
+        ctx.fillStyle = 'rgba(0,0,0,.6)'; rr(ctx, bx0, by0, bw, 30, 8); ctx.fill();
+        ctx.fillStyle = '#3a1020'; ctx.fillRect(bx0 + 6, by0 + 18, bw - 12, 7); ctx.fillStyle = boss.hp < boss.max / 2 ? '#ff3b3b' : '#b35cff'; ctx.fillRect(bx0 + 6, by0 + 18, (bw - 12) * Math.max(0, boss.hp / boss.max), 7);
+        ctx.fillStyle = '#fff'; ctx.font = '700 12px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText(`${boss.B.ch}  ${boss.B.name}${boss.hp < boss.max / 2 ? ' · ЯРОСТЬ' : ''}`, bx0 + 8, by0 + 10);
+        ctx.textAlign = 'right'; ctx.fillText(`${fmt(Math.max(0, boss.hp))} / ${fmt(boss.max)}`, bx0 + bw - 8, by0 + 10); ctx.textAlign = 'center';
+      }
       // мини-карта
       const mw = narrow ? 120 : 150, mh = mw * WH / WW, mx = VW - mw - 10, my = VH - mh - 10, s = mw / WW;
       ctx.fillStyle = 'rgba(0,0,0,.4)'; rr(ctx, mx - 3, my - 3, mw + 6, mh + 6, 6); ctx.fill();
       ctx.fillStyle = 'rgba(255,236,190,.7)'; ctx.beginPath(); ctx.arc(mx + CAMP.x * s, my + CAMP.y * s, CAMP.r * s + 1, 0, 6.283); ctx.fill();
-      ctx.fillStyle = '#e04b4b'; for (const e of enemies) ctx.fillRect(mx + e.x * s - 1, my + e.y * s - 1, e.type === 'king' ? 5 : 3, e.type === 'king' ? 5 : 3);
-      ctx.fillStyle = '#ffd34d'; for (const b of bubbles) if (!b.dead && !b.pop) ctx.fillRect(mx + b.x * s - 2, my + b.y * s - 2, 4, 4);
+      ctx.fillStyle = seals() >= SEALS || boss ? '#b48cff' : 'rgba(180,180,180,.7)'; ctx.beginPath(); ctx.arc(mx + L.portal.x * s, my + L.portal.y * s, 4, 0, 6.283); ctx.fill();
+      ctx.fillStyle = '#e04b4b'; for (const e of enemies) { const z = e.isBoss ? 7 : e.type === 'king' ? 5 : 3; ctx.fillRect(mx + e.x * s - z / 2, my + e.y * s - z / 2, z, z); }
+      for (const b of bubbles) if (!b.dead && !b.pop) { ctx.fillStyle = b.ok && v.mode !== 'hard' ? '#ffd34d' : '#fff7d6'; ctx.fillRect(mx + b.x * s - 2, my + b.y * s - 2, 4, 4); }
       ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 1; ctx.strokeRect(mx + cam.x * s, my + cam.y * s, VW * s, VH * s);
       ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(mx + P.x * s, my + P.y * s, 3, 0, 6.283); ctx.fill();
-      ctx.textAlign = 'center';
       // «джойстик»
       if (ctl.joy.on) {
         ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ctl.joy.ox, ctl.joy.oy, 46, 0, 6.283); ctx.stroke();
@@ -575,14 +860,14 @@
       if (!document.getElementById('modal').classList.contains('open')) update(dt); else ctl.keys.clear();
       draw(ts);
       saveT += dt; hudT += dt;
-      if (hudT > .25) { hudT = 0; hud(); if (quest && !quest.done && !hintShown) banner(); }
+      if (hudT > .25) { hudT = 0; hud(); }
       if (saveT > 5) { saveT = 0; v.last = Date.now(); store.save(); }
       raf = requestAnimationFrame(frame);
     }
 
     /* ====== Магазин, карта, герой ====== */
-    const row = (ico, title, desc, price, can, maxed, onclick) => h('button.btn.evo-up' + (can && !maxed ? '.afford' : ''), { type: 'button', onclick, disabled: maxed },
-      h('span.ico', ico), h('span.evo-up-t', h('b', title), h('small.muted', desc)), h('span.evo-up-c', maxed ? 'MAX' : '🪙 ' + fmt(price)));
+    const row = (ico, title, desc, price, can, maxed, onclick, lockText) => h('button.btn.evo-up' + (can && !maxed && !lockText ? '.afford' : ''), { type: 'button', onclick, disabled: maxed || !!lockText },
+      h('span.ico', ico), h('span.evo-up-t', h('b', title), h('small.muted', desc)), h('span.evo-up-c', lockText || (maxed ? 'MAX' : '🪙 ' + fmt(price))));
     function buyUp(k, tab) {
       const u = UPS[k], lv = v.ups[k]; if (lv >= u.max) return;
       const c = u.cost(lv); if (v.coins < c) return ui.toast('Не хватает монет');
@@ -590,7 +875,7 @@
       ui.sfx('ok'); touchW(); hud(); shop(tab);
     }
     function buyWeapon(k) {
-      const w = WEAPONS[k], lv = v.wp[k]; if (lv >= w.max) return;
+      const w = WEAPONS[k], lv = v.wp[k]; if (lv >= w.max || !wpOpen(v, k)) return;
       const c = w.cost(lv); if (v.coins < c) return ui.toast('Не хватает монет');
       v.coins -= c; v.wp[k]++;
       if (lv === 0) { ui.sfx('level'); ui.confetti(50); ui.toast(`${w.ico} Новое оружие: ${w.name}!`, 'gold'); } else ui.sfx('ok');
@@ -605,28 +890,32 @@
       ui.sfx('level'); ui.confetti(50); touchW(); hud(); shop('eco');
     }
     function shop(tab) {
-      const tabs = h('div.wk-tabs', [['hero', '🧍 Герой'], ['weapons', '⚔️ Оружие'], ['eco', '🌾 Хозяйство']].map(([k, t]) => h('button.btn.sm' + (k === tab ? '.primary' : ''), { type: 'button', onclick: () => shop(k) }, t)));
+      const tabs = h('div.wk-tabs', [['weapons', '⚔️ Оружие'], ['mods', '🔧 Модули'], ['hero', '🧍 Герой'], ['eco', '🌾 Хозяйство']].map(([k, t]) => h('button.btn.sm' + (k === tab ? '.primary' : ''), { type: 'button', onclick: () => shop(k) }, t)));
       let rows;
       if (tab === 'weapons') {
         rows = Object.keys(WEAPONS).map(k => {
-          const w = WEAPONS[k], lv = v.wp[k], st = w.st(Math.max(1, lv)), nx = lv < w.max ? w.st(lv + 1) : null;
-          return row(w.ico, lv ? `${w.name} · ур. ${lv}` : `${w.name} — купить`, lv ? `${w.desc}. Сейчас: ${w.info(st)}${nx ? ` → ${w.info(nx)}` : ''}` : `${w.desc}. ${w.info(st)}`, w.cost(lv), v.coins >= w.cost(lv), lv >= w.max, () => buyWeapon(k));
+          const w = WEAPONS[k], lv = v.wp[k], st = w.st(Math.max(1, lv)), nx = lv < w.max ? w.st(lv + 1) : null, open = wpOpen(v, k);
+          const lock = open ? null : `🔒 босс «${LOCS[w.unlock].boss.name}»`;
+          return row(w.ico, lv ? `${w.name} · ур. ${lv}` : `${w.name} — купить`, lv ? `${w.desc}. Сейчас: ${w.info(st)}${nx ? ` → ${w.info(nx)}` : ''}` : `${w.desc}. ${w.info(st)}`, w.cost(lv), v.coins >= w.cost(lv), lv >= w.max, () => buyWeapon(k), lock);
         });
       } else {
         rows = Object.keys(UPS).filter(k => UPS[k].tab === tab).map(k => { const u = UPS[k], lv = v.ups[k]; return row(u.ico, `${u.name} · ур. ${lv}`, u.desc(lv), u.cost(lv), v.coins >= u.cost(lv), lv >= u.max, () => buyUp(k, tab)); });
         if (tab === 'eco') { const pc = petCost(v.pets.length), full = v.pets.length >= PET_MAX; rows.push(row('🐾', `Питомцы · ${v.pets.length}/${PET_MAX}`, 'Бегут за героем, стреляют по кляксам и приносят +2,5 🪙/с каждый', pc, v.coins >= pc, full, buyPet)); }
       }
       const lv = heroLvl(v);
-      const stats = h('p.muted.small', `Герой: ур. ${lv}, здоровье ${maxHp(v)}, броня −${Math.min(60, v.ups.armor * 5)}%, сила +${Math.round((dmgMul() - 1) * 100)}%. Кляксы побеждено: ${v.kills}.`);
+      const stats = h('p.muted.small', `Герой: ур. ${lv}, здоровье ${maxHp(v)}, броня −${Math.min(60, v.ups.armor * 5)}%, урон +${Math.round((dmgMul() - 1) * 100)}%. Клякс побеждено: ${v.kills}, боссов: ${v.bossKills.reduce((a, b) => a + b, 0)}.`);
       ui.modal('🛒 Магазин · 🪙 ' + fmt(v.coins), h('div.evo-ups', tabs, stats, ...rows), [{ label: 'Закрыть', primary: true }]);
     }
     function mapDialog() {
       const lv = heroLvl(v);
       ui.modal('🗺️ Карта локаций', h('div.wk-locs', LOCS.map((l, i) => {
-        const open = i <= v.maxLoc || lv >= l.req, cur = i === v.loc;
+        const open = locOpen(v, i), cur = i === v.loc;
         if (open && i > v.maxLoc) v.maxLoc = i;
+        const bk = v.bossKills[i];
         return h('button.wk-loc' + (cur ? '.on' : '') + (open ? '' : '.locked'), { type: 'button', disabled: !open, onclick: () => { document.getElementById('modal').classList.remove('open'); if (!cur) travel(i); } },
-          h('span.wk-loc-ico', l.ico), h('span.wk-loc-t', h('b', l.name), h('small.muted', open ? `Кляксы ×${l.mul} по силе · монеты ×${l.coin}` : `Откроется на ${l.req} уровне героя (сейчас ${lv})`)), h('span.chip.sm' + (cur ? '.done' : ''), cur ? 'вы здесь' : open ? 'отправиться' : '🔒'));
+          h('span.wk-loc-ico', l.ico),
+          h('span.wk-loc-t', h('b', l.name), h('small.muted', open ? `Босс: ${l.boss.ch} ${l.boss.name}${bk ? ` · побеждён ×${bk}` : ''} · кляксы ×${l.mul} · монеты ×${l.coin}` : `Откроется: победите босса «${LOCS[i - 1].boss.name}» или достигните ${l.req} уровня (сейчас ${lv})`)),
+          h('span.chip.sm' + (cur ? '.done' : ''), cur ? 'вы здесь' : open ? 'отправиться' : '🔒'));
       })), [{ label: 'Закрыть' }]);
     }
     function heroPicker() {
@@ -636,7 +925,7 @@
       ui.modal('Выберите героя', h('div', h('p.muted.small', 'Герой растёт вместе с уровнем: каждые 4 уровня — новая стадия.'), grid), [{ label: 'Закрыть' }]);
     }
 
-    canvas._dbg = () => ({ P, enemies, bubbles, quest, v, drops, cam, spawn: spawnEnemy, travel });
+    canvas._dbg = () => ({ P, enemies, bubbles, quest, v, drops, cam, boss, ebul, spawn: spawnEnemy, travel, startBoss, newRound });
     newRound(); hud();
     raf = requestAnimationFrame(frame);
     canvas.focus();

@@ -129,6 +129,8 @@
     { id: 'read1', ico: '📖', name: 'Читатель', desc: 'Прочитать первый текст и ответить на вопросы', ok: c => c.readTexts >= 1 },
     { id: 'read8', ico: '📚', name: 'Книгочей', desc: 'Прочитать 8 текстов', ok: c => c.readTexts >= 8 },
     { id: 'readAll', ico: '🎓', name: 'Библиотекарь', desc: 'Прочитать все тексты', ok: c => c.readTexts >= HZ.texts.length && HZ.texts.length > 0 },
+    { id: 'boss1', ico: '⚔️', name: 'Победитель клякс', desc: 'Одолеть первого босса в «Долине знаков»', ok: c => !!c.flags.boss1 },
+    { id: 'bossAll', ico: '🐉', name: 'Хранитель долины', desc: 'Победить боссов всех пяти локаций', ok: c => !!c.flags.bossAll },
     { id: 'hsk1', ico: '🏅', name: 'HSK 1 покорён', desc: 'Начать изучать все иероглифы HSK 1 из набора', ok: c => c.hsk1 }
   ];
   function ctx() {

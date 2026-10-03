@@ -185,7 +185,7 @@
 
   HZ.play = { makeRound, makeQueue, accOf, pool0, img, spriteOf, controls, setupCanvas, rr, firstGloss, keyOf, fmt };
   G.extra = (G.extra || []).concat([
-    { group: 'Idle и приключения', ico: '🌄', name: 'Долина знаков', desc: 'Большая карта и 5 локаций: ходите героем (WASD), сражайтесь с кляксами, собирайте нужные знаки, качайте героя и оружие', go: () => HZ.router.go('#/valley') },
+    { group: 'Idle и приключения', ico: '🌄', name: 'Долина знаков', desc: 'Ходите героем (WASD) по 5 локациям, ищите нужный знак, сражайтесь с кляксами и боссами, покупайте автомат, дробовик, ракетницу и другое оружие', go: () => HZ.router.go('#/valley') },
     { group: 'Аркады', ico: '🐍', name: 'Змейка знаков', get desc() { return 'Управляйте змейкой (WASD) и съедайте знак по заданию. Рекорд: ' + (store.s.best.snake || 0); }, go: snake }
   ]);
 })();
