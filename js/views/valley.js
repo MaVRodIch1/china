@@ -43,12 +43,43 @@
     rate: { tab: 'mods', ico: '⏱️', name: 'Скорострельность', desc: lv => `Оружие перезаряжается на 4% быстрее (сейчас −${lv * 4}%)`, cost: lv => Math.round(150 * Math.pow(1.8, lv)), max: 12 },
     range: { tab: 'mods', ico: '🎯', name: 'Дальность', desc: lv => `+8% к дальности оружия (сейчас +${lv * 8}%)`, cost: lv => Math.round(120 * Math.pow(1.75, lv)), max: 8 },
     crit: { tab: 'mods', ico: '💥', name: 'Критический удар', desc: lv => `Шанс двойного урона ${lv * 5}%`, cost: lv => Math.round(200 * Math.pow(1.8, lv)), max: 10 },
+    sharpen: { tab: 'katana', ico: '⚒️', name: 'Заточка катаны', desc: lv => `+15% урона катаны (сейчас +${lv * 15}%)`, cost: lv => Math.round(120 * Math.pow(1.6, lv)), max: 40 },
     reload: { tab: 'mods', ico: '🔄', name: 'Перезарядка', desc: lv => `Магазины автоматов, ружей и огнемётов меняются быстрее (−${Math.round(100 - 100 / (1 + .12 * lv))}% времени; R — перезарядить вручную)`, cost: lv => Math.round(140 * Math.pow(1.65, lv)), max: 10 },
     elem: { tab: 'mods', ico: '🌈', name: 'Сила стихий', desc: lv => `+20% к урону поджога, яда и кровотечения, дольше замедление (сейчас +${lv * 20}%)`, cost: lv => Math.round(250 * Math.pow(1.8, lv)), max: 10 },
     income: { tab: 'eco', ico: '🌾', name: 'Ферма', desc: lv => `+1,2 🪙/с пассивно (сейчас +${(lv * 1.2).toFixed(1)})`, cost: lv => Math.round(50 * Math.pow(1.6, lv)), max: 30 },
     reward: { tab: 'eco', ico: '💎', name: 'Награда за знак', desc: lv => `+15% монет за верный знак (сейчас +${lv * 15}%)`, cost: lv => Math.round(80 * Math.pow(1.7, lv)), max: 30 },
     wisdom: { tab: 'eco', ico: '🧠', name: 'Мудрость', desc: lv => `В «Испытании» подсказка через ${Math.max(1.5, 9 - 1.2 * lv).toFixed(1)} с${lv >= 5 ? ', нужный знак светится' : ' (с 5 ур. нужный знак светится)'}`, cost: lv => Math.round(120 * Math.pow(2, lv)), max: 6 }
   };
+
+  /* ====== Катана и перки: при каждом новом уровне героя — выбор одного перка из трёх ====== */
+  const PERKS = {
+    sharp: { ico: '🗡️', name: 'Острый клинок', max: 8, desc: l => `+18% урона катаны (станет +${18 * l}%)` },
+    quick: { ico: '⚡', name: 'Быстрые руки', max: 6, desc: l => `удары на 8% чаще (станет −${8 * l}% паузы)` },
+    reach: { ico: '📏', name: 'Длинный клинок', max: 5, desc: l => `+12% дальности удара (станет +${12 * l}%)` },
+    wide: { ico: '🌙', name: 'Широкий замах', max: 4, desc: l => `дуга удара шире на ${18 * l}%` },
+    double: { ico: '✌️', name: 'Двойной удар', max: 4, desc: l => `${15 * l}% шанс ударить второй раз` },
+    wave: { ico: '🌊', name: 'Волна клинка', max: 5, desc: l => `каждый удар пускает волну: ${40 * l}% урона, пробивает всех` },
+    whirl: { ico: '🌀', name: 'Вихрь', max: 4, desc: l => `каждый ${7 - l}-й удар — круговой, вокруг героя` },
+    fire: { ico: '🔥', name: 'Огненный клинок', max: 3, el: 'fire', desc: l => `поджог: ${30 * l}% урона в секунду` },
+    ice: { ico: '❄️', name: 'Ледяной клинок', max: 3, el: 'ice', desc: l => `замедляет кляксы на ${(1.2 + .5 * l).toFixed(1)} с` },
+    poison: { ico: '🧪', name: 'Ядовитый клинок', max: 3, el: 'poison', desc: l => `яд: ${25 * l}% урона в секунду, долго` },
+    bleed: { ico: '🩸', name: 'Кровопускание', max: 3, el: 'bleed', desc: l => `кровотечение: ${28 * l}% урона в секунду` },
+    vamp: { ico: '🦇', name: 'Вампиризм', max: 5, desc: l => `+${l} здоровья за каждую задетую кляксу` },
+    crit: { ico: '🎯', name: 'Меткость', max: 5, desc: l => `шанс двойного урона ${5 + 6 * l}%` },
+    heavy: { ico: '🔨', name: 'Тяжёлый удар', max: 3, desc: l => `сильнее отбрасывает, ${10 * l}% шанс оглушить` },
+    execute: { ico: '⚰️', name: 'Казнь', max: 3, desc: l => `кляксы с запасом здоровья < ${10 * l}% гибнут сразу` },
+    tough: { ico: '❤️', name: 'Крепкое тело', max: 6, desc: l => `+25 к здоровью (станет +${25 * l})` },
+    steel: { ico: '🛡️', name: 'Закалка', max: 5, desc: l => `−5% получаемого урона (станет −${5 * l}%)` },
+    swift: { ico: '👟', name: 'Лёгкие ноги', max: 4, desc: l => `+7% к скорости бега (станет +${7 * l}%)` },
+    dashm: { ico: '💨', name: 'Мастер рывка', max: 3, desc: l => `рывок чаще на ${15 * l}% и бьёт на +${50 * l}% сильнее` },
+    breath: { ico: '🌿', name: 'Дыхание', max: 4, desc: l => `+${(.8 * l).toFixed(1)} здоровья в секунду` },
+    sage: { ico: '📜', name: 'Мудрость меча', max: 3, desc: l => `удар знания по боссу: ${8 + 3 * l}% его здоровья` },
+    greed: { ico: '💰', name: 'Жадность', max: 4, desc: l => `+${12 * l}% монет` },
+    pull: { ico: '🧲', name: 'Притяжение', max: 4, desc: l => `монеты и знаки подбираются издалека (+${30 * l} px)` }
+  };
+  const pk = (v, id) => (v && v.perks && v.perks[id]) || 0;
+  const katanaStats = v => ({ dmg: 16 * (1 + .18 * pk(v, 'sharp')), cd: .5 * (1 - .08 * pk(v, 'quick')), range: 96 * (1 + .12 * pk(v, 'reach')), arc: 1.05 * (1 + .18 * pk(v, 'wide')), kb: 200 * (1 + .4 * pk(v, 'heavy')), crit: .06 * pk(v, 'crit'), stun: pk(v, 'heavy') ? .5 : 0 });
+  const coinK = v => 1 + .12 * pk(v, 'greed');
 
   /* ====== Арсенал ======
    * cls — механика: melee (взмах), gun (пули/стрелы), rocket, cone (огнемёт и т. п.), boomerang, throw (сюрикены, кунаи),
@@ -58,6 +89,7 @@
   const CATS = { melee: '⚔️ Ближний бой', ranged: '🏹 Стрелковое', thrown: '🌀 Метательное', grenade: '💣 Гранаты', magic: '🔮 Магия', special: '✨ Особое' };
   const AR = {}, AR_ORDER = [];
   const W = (id, o) => { AR[id] = Object.assign({ id, max: 10 }, o); AR_ORDER.push(id); };
+  W('katana', { name: 'Катана', ico: '🗡️', cat: 'melee', cls: 'melee', price: 0, max: 1, st: () => katanaStats(store.s.walk) });
   const L1 = l => l - 1;
   // ближний бой
   W('brush', { name: 'Кисть мастера', ico: '🖌️', cat: 'melee', cls: 'melee', price: 60, st: l => ({ dmg: 12 + 6 * L1(l), cd: Math.max(.35, .8 - .045 * L1(l)), range: 90 + 5 * L1(l), arc: 1.1 }) });
@@ -166,9 +198,20 @@
       let back = 0; for (let k = 3; k < Math.min(6, v.slots || 3); k++) back += SLOT_COST[k];
       v.coins += back; v.solo = 1; v.slotRefund = back;
     }
+    if (v.katana !== 1) { // только катана: всё купленное оружие и модули возвращаются монетами, за уровни — перки
+      let back = 0;
+      for (const k of AR_ORDER) { const lv = v.wp[k] || 0; if (k === 'katana') continue; for (let i = k === 'brush' ? 1 : 0; i < lv; i++) back += arCost(AR[k], i); v.wp[k] = 0; }
+      const OLD = { power: [100, 1.7], rate: [150, 1.8], range: [120, 1.75], crit: [200, 1.8], elem: [250, 1.8], reload: [140, 1.65] };
+      for (const k in OLD) for (let i = 0; i < (v.ups[k] || 0); i++) back += Math.round(OLD[k][0] * Math.pow(OLD[k][1], i));
+      v.coins += back; v.katana = 1; v.katanaRefund = back;
+      v.perks = v.perks || {}; v.perkPts = Math.max(0, heroLvl(v) - 1);
+    }
+    for (const k of ['power', 'rate', 'range', 'crit', 'elem', 'reload']) v.ups[k] = 0;
+    v.perks = v.perks || {}; v.perkPts = v.perkPts || 0;
+    v.wp.katana = 1;
     v.slots = 1;
-    v.eq = v.eq.filter(k => AR[k] && v.wp[k] > 0).slice(0, 1);
-    if (!v.eq.length) { const own = AR_ORDER.filter(k => v.wp[k] > 0).sort((a, b) => arCost(AR[b], v.wp[b]) - arCost(AR[a], v.wp[a])); if (own.length) v.eq = [own[0]]; }
+    v.eq = ['katana'];
+
     if (v.shield && !(v.shl[v.shield] > 0)) v.shield = null;
     if (v.heroV !== 2) { v.heroV = 2; v.skin = 'ninja'; } // новый герой — странник в соломенной шляпе
     if (v.skin !== 'ninja' && !HZ.evo.LINES[v.skin]) v.skin = 'ninja';
@@ -178,11 +221,11 @@
   const heroLvl = v => 1 + Math.floor(Math.sqrt(v.xp / 40));
   const xpAt = l => 40 * (l - 1) * (l - 1);
   const shieldOf = v => (v.shield && v.shl[v.shield] > 0 ? Object.assign({ id: v.shield, lv: v.shl[v.shield] }, SHIELDS[v.shield]) : null);
-  const maxHp = v => { const s = shieldOf(v); return Math.round((100 + 20 * v.ups.hp + 10 * (heroLvl(v) - 1)) * (1 + (s && s.hpMul ? s.hpMul + .05 * (s.lv - 1) : 0))); };
-  const armorMul = v => { const s = shieldOf(v); return 1 - Math.min(.75, .05 * v.ups.armor + (s ? s.armor + .02 * (s.lv - 1) : 0)); };
-  const regenOf = v => .5 + .6 * v.ups.regen;
-  const speedOf = v => 200 * (1 + .07 * v.ups.speed);
-  const magnetR = v => 70 + 18 * v.ups.magnet;
+  const maxHp = v => { const s = shieldOf(v); return Math.round((100 + 20 * v.ups.hp + 10 * (heroLvl(v) - 1) + 25 * pk(v, 'tough')) * (1 + (s && s.hpMul ? s.hpMul + .05 * (s.lv - 1) : 0))); };
+  const armorMul = v => { const s = shieldOf(v); return 1 - Math.min(.75, .05 * v.ups.armor + .05 * pk(v, 'steel') + (s ? s.armor + .02 * (s.lv - 1) : 0)); };
+  const regenOf = v => .5 + .6 * v.ups.regen + .8 * pk(v, 'breath');
+  const speedOf = v => 200 * (1 + .07 * v.ups.speed + .07 * pk(v, 'swift'));
+  const magnetR = v => 70 + 18 * v.ups.magnet + 30 * pk(v, 'pull');
   const incomeOf = v => (0.2 + 1.2 * v.ups.income + 2.5 * v.pets.length) * (1 + .1 * (heroLvl(v) - 1));
   const locOpen = (v, i) => i === 0 || i <= v.maxLoc || heroLvl(v) >= LOCS[i].req || v.bossKills[i - 1] > 0;
   const arOpen = (v, d) => d.unlock === undefined || v.bossKills[d.unlock] > 0;
@@ -281,18 +324,20 @@
     const away = Math.min(4 * 3600, Math.max(0, (Date.now() - (v.last || Date.now())) / 1000));
     if (away > 60) { const g = incomeOf(v) * away * 0.5; v.coins += g; ui.toast(`🌙 Пока вас не было, ферма принесла ${fmt(g)} 🪙`, 'gold', 4500); }
     v.last = Date.now();
+    if (v.katanaRefund) { ui.toast(`🗡️ Теперь у странника только катана. За оружие и модули возвращено ${fmt(v.katanaRefund)} 🪙, а за уровни — ${v.perkPts} перк(ов): нажмите «⭐ Перк!»`, 'gold', 7000); v.katanaRefund = 0; v.slotRefund = 0; }
     if (v.slotRefund) { ui.toast(`Теперь в руках одно оружие (сильнее в ${SOLO} раза). За прежние слоты возвращено ${fmt(v.slotRefund)} 🪙. Q / E — сменить оружие.`, 'gold', 6500); v.slotRefund = 0; }
     if (v.hp == null || v.hp <= 0) v.hp = maxHp(v);
     store.save();
 
     const el = { coins: h('b.wk-coins', ''), inc: h('span.muted.small'), lvl: h('span.hud-pill'), loc: h('span.hud-pill.wk-locpill'), combo: h('span.hud-pill'),
-      shop: h('button.btn.sm', { type: 'button', onclick: () => shop('arsenal') }, '🛒 Арсенал'),
+      shop: h('button.btn.sm', { type: 'button', onclick: () => shop('katana') }, '🛒 Лавка'),
+      perks: h('button.btn.sm', { type: 'button', onclick: () => perksDialog() }),
       mode: h('button.btn.sm', { type: 'button', onclick: () => { v.mode = v.mode === 'hard' ? 'show' : 'hard'; touchW(); hud(); ui.toast(v.mode === 'hard' ? '🧠 Испытание: на экране только значение или чтение — награда ×2' : '🎯 Знак на экране: показан сам иероглиф, стрелка ведёт к нему'); } }),
       snd: h('button.btn.sm', { type: 'button', onclick: () => { v.sound = !v.sound; touchW(); hud(); } }) };
     const src = G.srcSelect(() => newRound());
     area.append(
       h('div.wk-top', h('div', h('div.evo-coin-row', h('span.evo-coin', '🪙'), el.coins), el.inc), h('div.wk-pills', el.lvl, el.loc, el.combo)),
-      h('div.wk-bar', el.shop, h('button.btn.sm', { type: 'button', onclick: () => mapDialog() }, '🗺️ Карта'), el.mode, h('button.btn.sm', { type: 'button', onclick: () => heroPicker() }, '🥷 Герой'), el.snd, h('label.wk-src', h('span.muted.small', '📚'), src)),
+      h('div.wk-bar', el.perks, el.shop, h('button.btn.sm', { type: 'button', onclick: () => mapDialog() }, '🗺️ Карта'), el.mode, h('button.btn.sm', { type: 'button', onclick: () => heroPicker() }, '🥷 Герой'), el.snd, h('label.wk-src', h('span.muted.small', '📚'), src)),
       canvas,
       h('p.muted.small.center', 'WASD или стрелки (на телефоне — ведите пальцем по полю), пробел или 💨 — рывок сквозь кляксы. Оружие в руках бьёт само; на компьютере герой целится в кляксу у курсора. Q / E — сменить оружие, R — перезарядка. Задание вверху экрана: найдите этот знак — получите монеты, опыт, лечение и печать 🌀. 8 печатей открывают портал босса. В бою с боссом верный знак наносит «удар знания». В лагере 🏕️ кляксы не трогают.'));
 
@@ -358,7 +403,7 @@
       else if (qBtn.r && Math.hypot(x - qBtn.x, y - qBtn.y) < qBtn.r + 10) { ev.stopPropagation(); ev.preventDefault(); if (quest) ui.speak(quest.e.ch); }
       else if (inRect(x, y, mm.zin)) { ev.stopPropagation(); ev.preventDefault(); mmZoom = Math.min(3, mmZoom + 1); }
       else if (inRect(x, y, mm.zout)) { ev.stopPropagation(); ev.preventDefault(); mmZoom = Math.max(1, mmZoom - 1); }
-      else if (x >= 6 && x <= 52 && y >= iy0 - 3 && y <= iy0 + n * 38) { ev.stopPropagation(); ev.preventDefault(); shop(y >= iy0 + v.eq.length * 38 ? 'shields' : 'arsenal'); }
+      else if (x >= 6 && x <= 52 && y >= iy0 - 3 && y <= iy0 + n * 38) { ev.stopPropagation(); ev.preventDefault(); if (y >= iy0 + v.eq.length * 38) shop('shields'); else perksDialog(); }
     }, true);
     // прицел курсором (компьютер): герой стреляет в кляксу, ближайшую к курсору
     const mouse = { x: 0, y: 0, t: -1e9 };
@@ -374,7 +419,7 @@
 
     const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
     const inCamp = p => dist(p, CAMP) < CAMP.r;
-    const dmgMul = () => (1 + .06 * (heroLvl(v) - 1)) * (1 + .04 * Math.min(combo, 10)) * (1 + .1 * v.ups.power);
+    const dmgMul = () => (1 + .06 * (heroLvl(v) - 1)) * (1 + .04 * Math.min(combo, 10)) * (1 + .15 * v.ups.sharpen);
     const seals = () => v.seals[v.loc] || 0;
 
     function hud() {
@@ -386,7 +431,8 @@
       el.combo.textContent = combo >= 2 ? `🔥 ×${combo} · +${Math.min(combo, 10) * 4}% урона` : 'Серия 0'; el.combo.classList.toggle('hot', combo >= 2);
       el.mode.textContent = v.mode === 'hard' ? '🧠 Испытание ×2' : '🎯 Знак на экране';
       el.snd.textContent = v.sound ? '🔊' : '🔇';
-      const aff = Object.keys(UPS).some(k => v.ups[k] < UPS[k].max && v.coins >= UPS[k].cost(v.ups[k])) || AR_ORDER.some(k => arOpen(v, AR[k]) && v.wp[k] < AR[k].max && v.coins >= arCost(AR[k], v.wp[k])) || (v.pets.length < PET_MAX && v.coins >= petCost(v.pets.length));
+      const aff = Object.keys(UPS).some(k => UPS[k].tab !== 'mods' && v.ups[k] < UPS[k].max && v.coins >= UPS[k].cost(v.ups[k])) || (v.pets.length < PET_MAX && v.coins >= petCost(v.pets.length));
+      el.perks.textContent = v.perkPts ? `⭐ Перк! (${v.perkPts})` : '⭐ Перки'; el.perks.classList.toggle('primary', !!v.perkPts);
       el.shop.classList.toggle('afford', aff);
     }
 
@@ -414,7 +460,7 @@
     function onRight(b) {
       const e = quest.e, li = v.loc, hard = v.mode === 'hard';
       combo++; v.right++; session.right++; v.bestCombo = Math.max(v.bestCombo, combo);
-      const gain = Math.round((8 + heroLvl(v) * 2 + Math.min(combo, 15) * 2) * (1 + .15 * v.ups.reward) * LOCS[li].coin * (roundWrong ? .5 : 1) * (hard ? 2 : 1));
+      const gain = Math.round((8 + heroLvl(v) * 2 + Math.min(combo, 15) * 2) * (1 + .15 * v.ups.reward) * coinK(v) * LOCS[li].coin * (roundWrong ? .5 : 1) * (hard ? 2 : 1));
       v.coins += gain;
       addXp(Math.round((12 + Math.min(combo, 10) * 2) * (1 + .25 * li) * (hard ? 1.5 : 1)));
       v.hp = Math.min(maxHp(v), v.hp + maxHp(v) * .1);
@@ -423,7 +469,7 @@
       ui.sfx('ok'); if (v.sound) ui.speak(e.ch);
       P.atkT = .2; P.lvlT = Math.max(P.lvlT, .5);
       if (boss) { // удар знания
-        const d = Math.round(boss.max * .08);
+        const d = Math.round(boss.max * (.08 + .03 * pk(v, 'sage')));
         boss.hp -= d; boss.stun = 1.2; boss.hit = .3;
         floatText(boss.x, boss.y - boss.r - 30, `Удар знания! −${fmt(d)}`, '#7a4dc9', 1.8); burst(boss.x, boss.y, '#b48cff', 30); shake = .3;
         if (boss.hp <= 0) kill(boss);
@@ -453,8 +499,10 @@
       v.xp += n;
       const lv = heroLvl(v);
       if (lv > lastLvl) {
-        lastLvl = lv; v.hp = maxHp(v); P.lvlT = 1.5;
-        ui.toast(`⭐ Уровень героя ${lv}! Здоровье и сила выросли`, 'gold', 3000); ui.sfx('level'); ui.confetti(60);
+        const lastLvl0 = lastLvl; lastLvl = lv; v.hp = maxHp(v); P.lvlT = 1.5;
+        v.perkPts = (v.perkPts || 0) + (lv - lastLvl0);
+        ui.sfx('level'); ui.confetti(60);
+        setTimeout(() => { if (!document.getElementById('modal').classList.contains('open')) perkPick(); }, 350);
         LOCS.forEach((l, i) => { if (locOpen(v, i) && i > v.maxLoc) { v.maxLoc = i; setTimeout(() => ui.toast(`🗺️ Открыта локация: ${l.ico} ${l.name}! Откройте «Карту»`, 'gold', 5000), 600); } });
         touchW();
       }
@@ -502,16 +550,17 @@
       const kb = e.isBoss ? .08 : 1; e.kx += (kx || 0) * kb; e.ky += (ky || 0) * kb;
       if (o.stun && !e.isBoss) e.stun = Math.max(e.stun || 0, o.stun);
       if (o.el) applyEl(e, o.el, dmg);
+      if (o.els) for (const el of o.els) applyEl(e, el, dmg, pk(v, el));
       const sh = shieldOf(v); if (sh && sh.steal) v.hp = Math.min(maxHp(v), v.hp + dmg * (sh.steal + .005 * (sh.lv - 1)));
       if (!o.quiet) fx.push({ type: 'num', x: e.x + (Math.random() - .5) * 14, y: e.y - e.r, text: crit ? dmg + '!' : String(dmg), crit, t: 0, col: o.el ? ELEM[o.el].col : null });
       if (e.hp <= 0) kill(e);
     }
-    function applyEl(e, el, dmg) {
-      const k = 1 + .2 * v.ups.elem;
+    function applyEl(e, el, dmg, lvl) { // lvl — уровень перка стихии (у катаны)
+      const k = lvl ? lvl * .85 : 1 + .2 * v.ups.elem;
       if (el === 'fire') e.burn = { t: 2.5, dps: Math.max(e.burn ? e.burn.dps : 0, dmg * .35 * k) };
-      else if (el === 'poison') e.poison = { t: 3.2, dps: Math.max(e.poison ? e.poison.dps : 0, dmg * .28 * k) };
-      else if (el === 'bleed') e.bleed = { t: 2.5, dps: Math.max(e.bleed ? e.bleed.dps : 0, dmg * .3 * k) };
-      else if (el === 'ice') e.slow = { t: 1.6 + .15 * v.ups.elem, k: e.isBoss ? .3 : .55 };
+      else if (el === 'poison') e.poison = { t: 3.8, dps: Math.max(e.poison ? e.poison.dps : 0, dmg * .29 * k) };
+      else if (el === 'bleed') e.bleed = { t: 2.5, dps: Math.max(e.bleed ? e.bleed.dps : 0, dmg * .33 * k) };
+      else if (el === 'ice') e.slow = { t: lvl ? 1.2 + .5 * lvl : 1.6 + .15 * v.ups.elem, k: e.isBoss ? .3 : .55 };
     }
     function kill(e) {
       if (e.dead) return;
@@ -620,7 +669,7 @@
       P.aim = Math.atan2(t.y - (P.y - 30), t.x - P.x);
       if (!P.moving || melee) P.face = Math.cos(P.aim) >= 0 ? 1 : -1;
       P.atkT = .15;
-      if (melee) { P.swingT = .25; setPose(MELEE_POSE[id] || 'slash', .24, .2); } else P.recoilT = .1;
+      if (melee) { P.swingT = .25; if (id !== 'katana') setPose(MELEE_POSE[id] || 'slash', .24, .2); } else P.recoilT = .1;
     }
     // поза странника на время удара: не чаще, чем раз в gap секунд после прошлой
     function setPose(name, dur, gap) {
@@ -629,13 +678,14 @@
       if (t - P.poseEnd < gap) return;
       P.pose = { name, t: dur, dur }; P.poseEnd = t + dur;
     }
+    const dashCdOf = () => 1.3 * (1 - .15 * pk(v, 'dashm'));
     // рывок: пробел/Shift или кнопка 💨 — короткая неуязвимость и урон кляксам на пути
     function dash() {
       if (P.dashCd > 0 || P.dashT > 0) return;
       let [ax, ay] = ctl.vec();
       if (Math.hypot(ax, ay) < .1) { ax = P.face; ay = 0; }
       const m = Math.hypot(ax, ay);
-      P.dvx = ax / m * 780; P.dvy = ay / m * 780; P.dashT = .2; P.dashCd = 1.3; P.inv = Math.max(P.inv, .35); P.pose = null;
+      P.dvx = ax / m * 780; P.dvy = ay / m * 780; P.dashT = .2; P.dashCd = dashCdOf(); P.inv = Math.max(P.inv, .35); P.pose = null;
       if (Math.abs(ax) > .1) P.face = ax > 0 ? 1 : -1;
       P.dashHit = new Set();
       if (v.sound) ui.sfx('click');
@@ -701,12 +751,31 @@
         if (!MAG[id]) firedT[id] = performance.now();
         if (d.cls === 'melee') {
           aimAt(t, true, id);
-          const rg = s.range * M.rg;
-          slashes.push({ x: P.x, y: P.y, a: P.aim, r: rg, arc: Math.min(3.1, s.arc), t: 0, col: d.el ? ELEM[d.el].col : null });
-          for (const e of enemies) {
-            if (e.dead) continue;
-            const dd = Math.hypot(e.x - P.x, e.y - P.y + 24) - e.r, a = Math.atan2(e.y - P.y + 24, e.x - P.x);
-            if (dd < rg && angDiff(a, P.aim) < s.arc) { const kb = s.kb || 160; hurt(e, s.dmg, Math.cos(a) * kb, Math.sin(a) * kb, o); }
+          const rg = s.range * M.rg, kat = id === 'katana';
+          P.swings = (P.swings || 0) + 1;
+          const wl2 = pk(v, 'whirl'), whirl = kat && wl2 && P.swings % (7 - wl2) === 0;
+          const els = kat ? ['fire', 'ice', 'poison', 'bleed'].filter(k => pk(v, k)) : null;
+          const ko = Object.assign({}, o, { els, stun: s.stun && Math.random() < .1 * pk(v, 'heavy') ? .8 : 0 });
+          const elCol = els && els.length ? ELEM[els[els.length - 1]].col : d.el ? ELEM[d.el].col : null;
+          const strike = (mul, arc, r) => {
+            slashes.push({ x: P.x, y: P.y, a: P.aim, r, arc: Math.min(3.15, arc), t: 0, col: elCol, kat, face: P.face });
+            let hits = 0;
+            for (const e of enemies) {
+              if (e.dead) continue;
+              const dd = Math.hypot(e.x - P.x, e.y - P.y + 24) - e.r, a = Math.atan2(e.y - P.y + 24, e.x - P.x);
+              if (dd < r && angDiff(a, P.aim) < arc) {
+                const kb = s.kb || 160; hurt(e, s.dmg * mul, Math.cos(a) * kb, Math.sin(a) * kb, ko); hits++;
+                if (kat && !e.dead && !e.isBoss && pk(v, 'execute') && e.hp / e.max < .1 * pk(v, 'execute')) { floatText(e.x, e.y - e.r - 10, 'Казнь!', '#7a1a1a', .8); kill(e); }
+              }
+            }
+            if (kat && hits && pk(v, 'vamp')) v.hp = Math.min(maxHp(v), v.hp + pk(v, 'vamp') * hits);
+          };
+          if (whirl) { strike(1.3, Math.PI, rg * 1.2); setPose('dual', .3, 0); floatText(P.x, P.y - 110, '🌀 Вихрь!', '#5fc8ff', .8); }
+          else strike(1, s.arc, rg);
+          if (kat && Math.random() < .15 * pk(v, 'double')) { strike(.75, s.arc * .9, rg); if (!whirl) setPose('slash', .2, 0); }
+          if (kat && pk(v, 'wave')) { // волна клинка летит вперёд и пробивает всех
+            const wl = pk(v, 'wave'), sp = 560, a = P.aim;
+            shots.push({ kind: 'bullet', wave: true, x: P.x + Math.cos(a) * 30, y: P.y - 34 + Math.sin(a) * 20, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, dmg: s.dmg * .4 * wl, life: (220 + 30 * wl) / sp, pierce: 99, hit: new Set(), o: { els }, col: elCol || '#ffffff', w: 3 });
           }
           if (s.stun) shake = Math.max(shake, .12);
         } else if (d.cls === 'gun') {
@@ -825,7 +894,7 @@
         P.dashT -= dt; P.x += P.dvx * dt; P.y += P.dvy * dt;
         P.x = Math.max(30, Math.min(WW - 30, P.x)); P.y = Math.max(50, Math.min(WH - 20, P.y));
         P.ghostT -= dt; if (P.ghostT <= 0) { P.ghostT = .035; fx.push({ type: 'ghost', x: P.x, y: P.y, face: P.face, t: 0, life: .28 }); }
-        for (const e of enemies) if (!e.dead && !P.dashHit.has(e) && Math.hypot(e.x - P.x, e.y - P.y + 20) < e.r + 30) { P.dashHit.add(e); hurt(e, 14 + 2 * heroLvl(v), P.dvx * .25, P.dvy * .25, {}); }
+        for (const e of enemies) if (!e.dead && !P.dashHit.has(e) && Math.hypot(e.x - P.x, e.y - P.y + 20) < e.r + 30) { P.dashHit.add(e); hurt(e, (14 + 2 * heroLvl(v)) * (1 + .5 * pk(v, 'dashm')), P.dvx * .25, P.dvy * .25, {}); }
       }
       P.dashCd = Math.max(0, P.dashCd - dt);
       if (P.pose) { P.pose.t -= dt; if (P.pose.t <= 0) P.pose = null; }
@@ -904,7 +973,7 @@
         d.t += dt;
         const dd = Math.hypot(P.x - d.x, P.y - 20 - d.y);
         if (dd < mr) { const k = Math.min(1, dt * 7); d.x += (P.x - d.x) * k; d.y += (P.y - 20 - d.y) * k; }
-        if (dd < 26) { d.got = true; if (d.type === 'coin') v.coins += d.val; else { v.hp = Math.min(mhp, v.hp + mhp * .25); floatText(P.x, P.y - 80, '+❤️', '#d64545'); } }
+        if (dd < 26) { d.got = true; if (d.type === 'coin') v.coins += d.val * coinK(v); else { v.hp = Math.min(mhp, v.hp + mhp * .25); floatText(P.x, P.y - 80, '+❤️', '#d64545'); } }
       }
       drops = drops.filter(d => !d.got && d.t < 45);
 
@@ -1129,7 +1198,8 @@
       if (P.lvlT > 0) { ctx.fillStyle = `rgba(255,211,77,${Math.min(.5, P.lvlT * .4)})`; ctx.beginPath(); ctx.arc(sx, sy - 44, 50 + (1.5 - P.lvlT) * 30, 0, 6.283); ctx.fill(); }
       if (pose === 'meditate') { ctx.fillStyle = `rgba(255,196,90,${.16 + .08 * Math.sin(now / 300)})`; ctx.beginPath(); ctx.arc(sx, sy - 42, 58, 0, 6.283); ctx.fill(); }
       const hand = pose ? null : heldWeapon(), behind = hand && Math.sin(P.aim) < -.3;
-      if (behind) drawHand(hand, sx, sy, 49, true);
+      if (behind && hand.id !== 'katana') drawHand(hand, sx, sy, 49, true);
+      if (hand && hand.id === 'katana' && behind && P.swingT > 0) drawKatanaHeld(now, sx, sy);
       const T = im => (P.hurtT > 0 ? tinted(im, 'rgba(255,40,40,.55)') : im), ok = im => im.complete && im.naturalWidth;
       ctx.save();
       if (P.inv > 0 && P.hurtT <= 0 && P.dashT <= 0 && Math.floor(now / 90) % 2) ctx.globalAlpha = .55;
@@ -1140,7 +1210,7 @@
         if (ok(im)) ctx.drawImage(T(im), -m.ax, -m.ay, m.w, m.h);
       } else {
         const up = false, nm = 'idle', m = NJ[nm]; // всегда лицом к игроку
-        const top = NIMG(nm + (hand ? '-top-nf' : '-top')), lg = NIMG(nm + '-legl'), rg = NIMG(nm + '-legr');
+        const top = NIMG(nm + (hand && (hand.id !== 'katana' || P.swingT > 0) ? '-top-nf' : '-top')), lg = NIMG(nm + '-legl'), rg = NIMG(nm + '-legr');
         const A = walking ? .17 : 0, s1 = Math.sin(ph), c1 = Math.cos(ph);
         const bob = walking ? -Math.abs(s1) * 5 : 0, br = walking ? 0 : Math.sin(now / 520) * .022;
         ctx.rotate(walking ? P.mx * .07 : 0);
@@ -1158,7 +1228,8 @@
         }
       }
       ctx.restore();
-      if (hand && !behind) drawHand(hand, sx, sy, 49, true);
+      if (hand && hand.id === 'katana') { if (!(behind && P.swingT > 0)) drawKatanaHeld(now, sx, sy); }
+      else if (hand && !behind) drawHand(hand, sx, sy, 49, true);
     }
     function drawHero(now, ox, oy, lv) {
       if (v.skin === 'ninja') return drawNinja(now, P.x - ox, P.y - oy, lv);
@@ -1187,6 +1258,33 @@
       }
       ctx.restore();
       if (hand && !behind) drawHand(hand, sx, sy - hop);
+    }
+    /* Катана: рисуется кодом — рукоять с оплёткой, гарда, изогнутый клинок с красной кромкой */
+    function katana(x, y, a, len, col) {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a); if (Math.cos(a) < 0) ctx.scale(1, -1);
+      ctx.fillStyle = '#1d0b0d'; rr(ctx, -13, -2.4, 13, 4.8, 2.2); ctx.fill();
+      ctx.strokeStyle = '#b8262e'; ctx.lineWidth = 1.2; for (let i = -11; i < -1; i += 3) { ctx.beginPath(); ctx.moveTo(i, -2.2); ctx.lineTo(i + 2, 2.2); ctx.stroke(); }
+      ctx.fillStyle = '#d6a43a'; ctx.beginPath(); ctx.ellipse(1.5, 0, 2.2, 5, 0, 0, 6.283); ctx.fill(); ctx.strokeStyle = '#6b4a12'; ctx.lineWidth = .8; ctx.stroke();
+      if (col) { ctx.shadowColor = col; ctx.shadowBlur = 10; }
+      ctx.beginPath(); ctx.moveTo(3.5, -1.9); ctx.quadraticCurveTo(len * .6, -3.6, len, -2.8); ctx.lineTo(len - 7, 1.3); ctx.quadraticCurveTo(len * .55, 1.3, 3.5, 1.9); ctx.closePath();
+      const g = ctx.createLinearGradient(0, -3.5, 0, 2); g.addColorStop(0, '#2a2d36'); g.addColorStop(.5, '#c9d0db'); g.addColorStop(1, '#ffffff');
+      ctx.fillStyle = g; ctx.fill(); ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(20,20,30,.7)'; ctx.lineWidth = .8; ctx.stroke();
+      ctx.strokeStyle = col || 'rgba(230,40,40,.9)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(6, 1.5); ctx.quadraticCurveTo(len * .55, 1.1, len - 7, 1.3); ctx.stroke();
+      ctx.restore();
+    }
+    function drawKatanaHeld(now, sx, sy) {
+      const els = ['fire', 'ice', 'poison', 'bleed'].filter(k => pk(v, k)), col = els.length ? ELEM[els[els.length - 1]].col : null;
+      const f = P.face, bob = P.moving ? -Math.abs(Math.sin(P.walk * .8)) * 2.4 : 0;
+      if (P.swingT > 0) { // взмах: обе руки на рукояти, клинок проходит дугу через направление удара
+        const u = 1 - P.swingT / .25, e = 1 - Math.pow(1 - u, 3), fd = Math.cos(P.aim) >= 0 ? 1 : -1;
+        const a = P.aim - 1.7 * fd + 3 * fd * e, shx = sx + f * 5, shy = sy - 54;
+        const hx = shx + Math.cos(a) * 12, hy = shy + Math.sin(a) * 10;
+        katana(hx, hy, a, 50, col);
+        fist(hx - Math.cos(a) * 7, hy - Math.sin(a) * 7, 5.2); fist(hx, hy, 5.2);
+      } else { // в покое: клинок в правой руке, остриём вниз-вперёд, чуть покачивается
+        const a = (f > 0 ? 1.15 : Math.PI - 1.15) + Math.sin(now / 650) * .05 * f + (P.moving ? Math.sin(P.walk * 1.6) * .1 * f : 0);
+        katana(sx + f * 14.5, sy - 40 + bob, a, 46, col);
+      }
     }
     function fist(x, y, r) { // кулак странника (чёрная перчатка с бронзовым ободком)
       r *= .72;
@@ -1296,7 +1394,15 @@
       // волны, взмахи, конусы, молнии, луч
       for (const w of waves) { const k = w.t / .45; ctx.strokeStyle = `rgba(${w.col || '242,181,58'},${1 - k})`; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(w.x - ox, w.y - oy - 20, w.max * k, 0, 6.283); ctx.stroke(); }
       for (const s of slashes) {
-        const k = s.t / .22; ctx.strokeStyle = s.col ? s.col : `rgba(30,30,30,${.75 * (1 - k)})`; ctx.globalAlpha = s.col ? .8 * (1 - k) : 1;
+        const k = s.t / .22;
+        if (s.kat) { // красно-белый полумесяц, как на рисунке странника
+          const cx0 = s.x - ox, cy0 = s.y - oy - 30, R1 = s.r * (.72 + .28 * k), a0 = s.a - s.arc, a1 = s.a + s.arc;
+          const g = ctx.createRadialGradient(cx0, cy0, R1 * .55, cx0, cy0, R1); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.7, s.col || 'rgba(235,45,45,.95)'); g.addColorStop(1, 'rgba(255,255,255,.95)');
+          ctx.globalAlpha = .9 * (1 - k); ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(cx0, cy0, R1, a0, a1);
+          const ix = cx0 + Math.cos(s.a) * R1 * .22, iy = cy0 + Math.sin(s.a) * R1 * .22; ctx.arc(ix, iy, R1 * .86, a1 - .05, a0 + .05, true);
+          ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1; continue;
+        } ctx.strokeStyle = s.col ? s.col : `rgba(30,30,30,${.75 * (1 - k)})`; ctx.globalAlpha = s.col ? .8 * (1 - k) : 1;
         ctx.lineWidth = 12 * (1 - k) + 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(s.x - ox, s.y - oy - 24, s.r * (.6 + .4 * k), s.a - s.arc, s.a + s.arc); ctx.stroke(); ctx.globalAlpha = 1;
       }
       for (const c of cones) {
@@ -1328,6 +1434,7 @@
           else { ctx.fillStyle = '#556b2f'; rr(ctx, -10, -5, 22, 10, 4); ctx.fill(); ctx.fillStyle = '#d64545'; ctx.beginPath(); ctx.moveTo(12, -5); ctx.lineTo(18, 0); ctx.lineTo(12, 5); ctx.fill(); }
           ctx.restore();
         }
+        else if (s.wave) { const a = Math.atan2(s.vy, s.vx); ctx.save(); ctx.translate(sx, sy); ctx.rotate(a); ctx.globalAlpha = .85; const g = ctx.createLinearGradient(-30, 0, 8, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, s.col); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(-16, 0, 26, -1.15, 1.15); ctx.arc(-24, 0, 24, 1.05, -1.05, true); ctx.closePath(); ctx.fill(); ctx.restore(); ctx.globalAlpha = 1; }
         else if (s.kind === 'bullet') { ctx.strokeStyle = s.col || '#ffe066'; ctx.lineWidth = s.w || 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - s.vx * (s.trail ? .06 : .02), sy - s.vy * (s.trail ? .06 : .02)); ctx.stroke(); }
         else if (s.kind === 'arrow') {
           const a = Math.atan2(s.vy, s.vx);
@@ -1447,7 +1554,7 @@
       ctx.textAlign = 'center';
       drawQuest(now);
       { // кнопка рывка с перезарядкой
-        const db = dashBtn(), cd = P.dashCd / 1.3;
+        const db = dashBtn(), cd = P.dashCd / dashCdOf();
         const g = ctx.createRadialGradient(db.x, db.y - 8, 4, db.x, db.y, db.r + 4); g.addColorStop(0, 'rgba(70,82,60,.92)'); g.addColorStop(1, 'rgba(40,48,34,.92)');
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(db.x, db.y, db.r, 0, 6.283); ctx.fill();
         ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 3; ctx.stroke();
@@ -1582,19 +1689,59 @@
         })];
     }
     function shop(tab) {
-      const tabs = h('div.wk-tabs', [['arsenal', '⚔️ Арсенал'], ['shields', '🛡️ Щиты'], ['mods', '🔧 Модули'], ['hero', '🧍 Герой'], ['eco', '🌾 Хозяйство']].map(([k, t]) => h('button.btn.sm' + (k === tab ? '.primary' : ''), { type: 'button', onclick: () => shop(k) }, t)));
+      if (tab === 'arsenal' || tab === 'mods') tab = 'katana';
+      const tabs = h('div.wk-tabs', [['katana', '🗡️ Катана'], ['shields', '🛡️ Щиты'], ['hero', '🧍 Герой'], ['eco', '🌾 Хозяйство']].map(([k, t]) => h('button.btn.sm' + (k === tab ? '.primary' : ''), { type: 'button', onclick: () => shop(k) }, t)));
       let rows;
-      if (tab === 'arsenal') rows = arsenalTab();
-      else if (tab === 'shields') rows = shieldsTab();
+      if (tab === 'shields') rows = shieldsTab();
       else {
         rows = Object.keys(UPS).filter(k => UPS[k].tab === tab).map(k => { const u = UPS[k], lv = v.ups[k]; return row(u.ico, `${u.name} · ур. ${lv}`, u.desc(lv), u.cost(lv), v.coins >= u.cost(lv), lv >= u.max, () => buyUp(k, tab)); });
+        if (tab === 'katana') {
+          const ks = katanaStats(v);
+          rows.unshift(h('div.wk-slots', h('b', `🗡️ Катана: урон ${Math.round(ks.dmg * dmgMul() * SOLO)}, удар раз в ${ks.cd.toFixed(2)} с, дальность ${Math.round(ks.range)}`), h('small.muted', 'Новые умения катаны — перки: каждый уровень героя даёт выбор одного из трёх. Монеты идут на заточку, броню и хозяйство.')));
+          rows.push(h('button.btn.primary', { type: 'button', onclick: () => perksDialog() }, `⭐ Перки${v.perkPts ? ' · можно выбрать ' + v.perkPts : ''}`));
+        }
         if (tab === 'eco') { const pc = petCost(v.pets.length), full = v.pets.length >= PET_MAX; rows.push(row('🐾', `Питомцы · ${v.pets.length}/${PET_MAX}`, 'Бегут за героем, стреляют по кляксам и приносят +2,5 🪙/с каждый', pc, v.coins >= pc, full, buyPet)); }
       }
       const lv = heroLvl(v);
       const stats = h('p.muted.small', `Герой: ур. ${lv}, здоровье ${maxHp(v)}, броня −${Math.round((1 - armorMul(v)) * 100)}%, урон ×${(dmgMul() * SOLO).toFixed(1)}. Клякс побеждено: ${v.kills}, боссов: ${v.bossKills.reduce((a, b) => a + b, 0)}.`);
       const scrollY = (document.querySelector('#modal .modal-body') || {}).scrollTop || 0;
-      ui.modal('🛒 Арсенал и магазин · 🪙 ' + fmt(v.coins), h('div.evo-ups', tabs, stats, ...rows), [{ label: 'Закрыть', primary: true }]);
+      ui.modal('🛒 Лавка · 🪙 ' + fmt(v.coins), h('div.evo-ups', tabs, stats, ...rows), [{ label: 'Закрыть', primary: true }]);
       const mb = document.querySelector('#modal .modal-body'); if (mb && scrollY) mb.scrollTop = scrollY;
+    }
+    /* ====== Перки ====== */
+    function perkChoices() {
+      const free = Object.keys(PERKS).filter(k => pk(v, k) < PERKS[k].max);
+      const elems = ['fire', 'ice', 'poison', 'bleed'].filter(k => pk(v, k)).length;
+      const w = k => (PERKS[k].el && !pk(v, k) && elems >= 2 ? .3 : 1) * (pk(v, k) ? 1.4 : 1); // уже взятые — чуть чаще, третья стихия — реже
+      const out = [];
+      while (out.length < 3 && out.length < free.length) {
+        const left = free.filter(k => !out.includes(k)), tot = left.reduce((a, k) => a + w(k), 0);
+        let r = Math.random() * tot; for (const k of left) { r -= w(k); if (r <= 0) { out.push(k); break; } }
+      }
+      return out;
+    }
+    function perkPick() {
+      if (!v.perkPts) return perksDialog();
+      const ch = perkChoices();
+      if (!ch.length) { v.perkPts = 0; return ui.toast('Все перки уже на максимуме!', 'gold'); }
+      const cards = h('div.wk-perks', ch.map(k => {
+        const P0 = PERKS[k], lv = pk(v, k);
+        return h('button.wk-perk', { type: 'button', onclick: () => {
+          v.perks[k] = lv + 1; v.perkPts--; touchW(); hud(); ui.sfx('ok');
+          document.getElementById('modal').classList.remove('open');
+          floatText(P.x, P.y - 120, `${P0.ico} ${P0.name}${lv ? ' ' + (lv + 1) : ''}`, '#ffd34d', 1.4);
+          if (v.perkPts > 0) setTimeout(perkPick, 250);
+        } }, h('span.wk-perk-ico', P0.ico), h('b', P0.name), h('small.chip.sm' + (lv ? '.done' : '.new'), lv ? `ур. ${lv} → ${lv + 1}` : 'новый'), h('span.muted.small', P0.desc(lv + 1)));
+      }));
+      ui.modal(`⭐ Уровень ${heroLvl(v)}: выберите умение${v.perkPts > 1 ? ` (ещё ${v.perkPts})` : ''}`, h('div', cards), [{ label: 'Позже', onclick: () => { hud(); } }]);
+    }
+    function perksDialog() {
+      if (v.perkPts) return perkPick();
+      const own = Object.keys(PERKS).filter(k => pk(v, k));
+      ui.modal('⭐ Умения катаны', h('div',
+        h('p.muted.small', 'Каждый новый уровень героя даёт выбор одного умения из трёх. Опыт — за верные знаки и победы над кляксами.'),
+        own.length ? h('div.wk-perks.own', own.map(k => h('div.wk-perk', h('span.wk-perk-ico', PERKS[k].ico), h('b', PERKS[k].name), h('small.chip.sm.done', `ур. ${pk(v, k)}/${PERKS[k].max}`), h('span.muted.small', PERKS[k].desc(pk(v, k)))))) : h('p', 'Пока ни одного умения — получите следующий уровень!')),
+        [{ label: 'Закрыть', primary: true }]);
     }
     function mapDialog() {
       const lv = heroLvl(v);

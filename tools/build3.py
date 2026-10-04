@@ -34,6 +34,9 @@ for f in sorted(glob.glob(P('tools/content/sent2_*.tsv'))):
     for l in open(f, encoding='utf-8'):
         a = l.rstrip('\n').split('\t')
         if len(a) == 3: sents2[a[0]] = (a[1], a[2])
+# подсказки «как запомнить» для слов
+mnw = {}
+for f in sorted(glob.glob(P('tools/content/mn_*.tsv'))): mnw.update(tsv(f))
 gl = tsv(P('tools/content/ru_glyphs.tsv'))
 for k, v in re.findall(r"'(.)': '([^']+)'", starter.split('rows:')[0]): gl.setdefault(k, v)
 
@@ -129,9 +132,11 @@ for w in words:
     z, r = sents[w['w']]
     sent = f"{z}|{syl(z)}|{r}"
     if w['w'] in sents2: z2, r2 = sents2[w['w']]; sent += f"¶{z2}|{syl(z2)}|{r2}"  # ¶ разделяет примеры
-    wl.append('  [' + ','.join([q(w['w']), q(w['py']), q(ru_words[w['w']]), str(w['lv']), q(','.join(w['pos'][:2])), q(sent)]) + ']')
+    row = [q(w['w']), q(w['py']), q(ru_words[w['w']]), str(w['lv']), q(','.join(w['pos'][:2])), q(sent)]
+    if w['w'] in mnw: row.append(q(mnw[w['w']]))
+    wl.append('  [' + ','.join(row) + ']')
 open(P('js/data/hsk-words.js'), 'w', encoding='utf-8').write(
-    f"/* Слова HSK 3.0, уровни 1–{OUT - 1} ({len(words)} слов). Формат: [слово, пиньинь, перевод, уровень, части речи, примеры «иероглифы|пиньинь|перевод» через ¶]. Сгенерировано tools/build3.py. */\n"
+    f"/* Слова HSK 3.0, уровни 1–{OUT - 1} ({len(words)} слов). Формат: [слово, пиньинь, перевод, уровень, части речи, примеры «иероглифы|пиньинь|перевод» через ¶, подсказка «как запомнить»]. Сгенерировано tools/build3.py. */\n"
     "HZ.addWords([\n" + ',\n'.join(wl) + "\n]);\n")
 
 # ---------- уровни стартовых иероглифов ----------

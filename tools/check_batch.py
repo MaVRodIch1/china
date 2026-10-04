@@ -3,6 +3,7 @@
   python3 tools/check_batch.py words <вход words_N.tsv> <ru_words_NN.tsv> <sent_0NN.tsv> [--allowed файл]
   python3 tools/check_batch.py chars <вход chars_N.tsv> <ruN_chars_0N.txt> [--allowed файл]
   python3 tools/check_batch.py sent2 <вход s2_N.tsv> <sent2_0N.tsv> [--allowed файл]
+  python3 tools/check_batch.py mn <вход mn_N.tsv> <mn_0N.tsv>  (подсказки «как запомнить» для слов)
 Проверяет: всё ли покрыто, формат, кириллица в переводах, предложение содержит слово/иероглиф,
 все иероглифы предложения — из допустимого набора (по умолчанию HSK 3.0 уровней 1–4: tools/cache/allowed_l4.txt)."""
 import sys, re, os
@@ -67,6 +68,22 @@ elif mode == 'sent2':
         if a[0] in old and a[1].strip('。！？!?') == old[a[0]].strip('。！？!?'): probs.append(f'строка {i}: «{a[0]}» — то же предложение, что уже есть')
     for w in items:
         if w not in got: probs.append(f'нет предложения для «{w}»')
+    extra = [w for w in got if w not in items]
+    if extra: probs.append('лишние записи: ' + ' '.join(extra))
+if mode == 'mn':
+    rows = inp(sys.argv[2]); items = [r[0] for r in rows]
+    got = {}
+    for i, l in enumerate(open(sys.argv[3], encoding='utf-8'), 1):
+        a = l.rstrip('\n').split('\t')
+        if len(a) != 2: probs.append(f'строка {i}: нужно 2 колонки — {l.strip()[:60]}'); continue
+        w, t = a; got[w] = t
+        if not CYR.search(t) or len(t) < 25: probs.append(f'строка {i}: «{w}» — слишком короткая подсказка')
+        if len(t) > 220: probs.append(f'строка {i}: «{w}» — слишком длинная подсказка ({len(t)} симв.)')
+        miss = [c for c in dict.fromkeys(w) if han(c) and c not in t]
+        if miss: probs.append(f'строка {i}: «{w}» — в подсказке не названы знаки: {"".join(miss)}')
+        if '|' in t: probs.append(f'строка {i}: «{w}» — символ | недопустим')
+    for w in items:
+        if w not in got: probs.append(f'нет подсказки для «{w}»')
     extra = [w for w in got if w not in items]
     if extra: probs.append('лишние записи: ' + ' '.join(extra))
 print('\n'.join(probs) if probs else 'OK')

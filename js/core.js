@@ -61,10 +61,10 @@
   HZ.wordByKey = {};      // 'w:слово' -> запись
   /** Добавить слова: [слово, пиньинь, перевод, уровень HSK, части речи]. Запись совместима с иероглифом (ch, py, m, h …). */
   HZ.addWords = function (list) {
-    list.forEach(([w, py, m, h, pos, sent]) => {
+    list.forEach(([w, py, m, h, pos, sent, mn]) => {
       const key = 'w:' + w;
       if (HZ.wordByKey[key]) return;
-      const e = { ch: w, key, py, m, h, pos: pos ? pos.split(',') : [], s: [...w].length, r: '', th: [], comps: [], mn: '', et: '', words: [], sents: sent ? sent.split('¶').map(x => (([z, p, t]) => ({ z, p, m: t }))(x.split('|'))) : [],
+      const e = { ch: w, key, py, m, h, pos: pos ? pos.split(',') : [], s: [...w].length, r: '', th: [], comps: [], mn: mn || '', et: '', words: [], sents: sent ? sent.split('¶').map(x => (([z, p, t]) => ({ z, p, m: t }))(x.split('|'))) : [],
         isWord: true, chars: [...w].filter(c => c >= '\u4e00' && c <= '\u9fff'), idx: HZ.words.length, tone: HZ.firstTone(py) };
       HZ.words.push(e); HZ.wordByKey[key] = e;
     });

@@ -21,7 +21,11 @@
     const show = !ROOTS.has(routeName()) || !!exitBtn();
     btn.hidden = !show; document.body.classList.toggle('has-back', show);
   }
+  const slowMs = {};                          // сколько рисовался каждый экран в прошлый раз
+  let pending = 0;
+  function spinner(on) { document.body.classList.toggle('loading', on); }
   const router = {
+    _slow: slowMs,
     back() {
       const ex = exitBtn();
       if (ex) return ex.click();                 // игра или сессия: выйти в меню
@@ -32,6 +36,13 @@
     onLeave(fn) { leaveFns.push(fn); },
     go(hash) { if (location.hash === hash) router.render(); else location.hash = hash; },
     render() {
+      // тяжёлый экран: сначала показать индикатор загрузки, а рисовать — в следующем кадре
+      const nm = routeName(), id = ++pending;
+      if ((slowMs[nm] || 0) > 90) { spinner(true); requestAnimationFrame(() => requestAnimationFrame(() => { if (id === pending) router.paint(); })); return; }
+      router.paint();
+    },
+    paint() {
+      const t0 = performance.now();
       leaveFns.forEach(f => { try { f(); } catch (e) { /* ignore */ } }); leaveFns = [];
       track();
       document.getElementById('modal').classList.remove('open');
@@ -65,7 +76,10 @@
       }
       document.querySelectorAll('[data-nav]').forEach(a2 => a2.classList.toggle('active', a2.dataset.nav === (nav === 'home' ? 'home' : nav)));
       document.body.classList.toggle('focus', name === 'study');
-      v.classList.remove('view-in'); void v.offsetWidth; v.classList.add('view-in'); // плавное появление страницы
+      // плавное появление страницы (анимация всего контейнера, без принудительной перекладки)
+      if (v.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) v.animate([{ opacity: .35, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 130, easing: 'ease-out' });
+      spinner(false);
+      slowMs[name || 'home'] = performance.now() - t0;
       updateBack();
       HZ.gami.refreshHeader();
     }
@@ -99,7 +113,7 @@
     document.addEventListener('keydown', e => {
       if (e.key !== 'Escape' || e.defaultPrevented || document.getElementById('modal').classList.contains('open')) return;
       const t = document.activeElement && document.activeElement.tagName;
-      if (/^(INPUT|TEXTAREA|SELECT|CANVAS)$/.test(t) || document.getElementById('back-btn').hidden) return;
+      if (/^(INPUT|TEXTAREA|SELECT|CANVAS)$/.test(t) || document.getElementById('back-btn').hidden || document.querySelector('#view canvas')) return; // в играх Esc не уводит со страницы
       router.back();
     });
     let sw = null;

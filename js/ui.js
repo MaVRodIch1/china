@@ -7,6 +7,7 @@
   function h(tag, attrs, ...kids) {
     const m = /^([a-z0-9]+)((?:[.#][\w-]+)*)$/i.exec(tag) || [null, tag, ''];
     const el = document.createElement(m[1]);
+    if (m[1] === 'img') el.decoding = 'async'; // картинки декодируются вне основного потока
     (m[2].match(/[.#][\w-]+/g) || []).forEach(t => t[0] === '.' ? el.classList.add(t.slice(1)) : (el.id = t.slice(1)));
     if (attrs != null && (typeof attrs !== 'object' || attrs.nodeType || Array.isArray(attrs))) { kids.unshift(attrs); attrs = null; }
     for (const k in attrs || {}) {

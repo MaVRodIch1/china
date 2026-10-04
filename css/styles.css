@@ -87,7 +87,7 @@ a.stat-card:hover { transform: translateY(-2px); } .stat-card .ico { font-size: 
 .hsk-row { display: flex; align-items: center; gap: .7rem; margin: .5rem 0; } .hsk-row > span { width: 62px; font-weight: 600; font-size: .9rem; } .hsk-row small { width: 44px; text-align: right; color: var(--muted); }
 .chart { width: 100%; height: auto; } .chart .b-ok { fill: var(--accent); } .chart .b-bad { fill: var(--accent); opacity: .25; } .chart text { fill: var(--muted); font-size: 10px; }
 .ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .7rem; } .ach { padding: .7rem; border: 1px solid var(--line); border-radius: 12px; display: grid; gap: .1rem; opacity: .45; filter: grayscale(1); } .ach.on { opacity: 1; filter: none; background: var(--gold-soft); border-color: transparent; } .ach .ico { font-size: 1.6rem; } .ach small { font-size: .75rem; }
-.set-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem 0; border-bottom: 1px solid var(--line); } .set-row:last-child { border-bottom: 0; } .set-row .input { width: auto; min-width: 190px; } .set-row p { margin: 0; }
+.set-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem 0; border-bottom: 1px solid var(--line); } .set-row:last-child { border-bottom: 0; } .set-row .input { width: 220px; } .set-row p { margin: 0; }
 .empty, .summary { text-align: center; padding: 2.5rem 1rem; } .empty .big, .summary .big { font-size: 3.5rem; }
 .stat-row { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; } .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: .8rem 1.2rem; min-width: 100px; display: grid; } .stat b { font-size: 1.6rem; } .stat span { font-size: .8rem; color: var(--muted); }
 .actions { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; margin: 1rem 0; }
@@ -154,7 +154,7 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .toast { background: var(--text); color: var(--bg); padding: .7rem 1rem; border-radius: 14px; box-shadow: var(--shadow); opacity: 0; transform: translateY(12px); transition: .3s; font-weight: 500; } .toast.in { opacity: 1; transform: none; } .toast.gold { background: var(--gold); color: #1a1a1a; } .toast.warn { background: var(--bad); color: #fff; }
 .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); display: none; align-items: center; justify-content: center; z-index: 90; padding: 1rem; } .modal.open { display: flex; }
 .modal-box { background: var(--surface); border-radius: 20px; width: min(560px, 100%); max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
-.modal.anim { animation: fadeIn .18s ease-out; } .modal.anim .modal-box { animation: pop .24s cubic-bezier(.2, .8, .3, 1); }
+.modal.anim { animation: fadeIn .12s ease-out; } .modal.anim .modal-box { animation: pop .16s cubic-bezier(.2, .8, .3, 1); }
 .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.2rem .4rem; } .modal-head h3 { margin: 0; } .modal-body { padding: .4rem 1.2rem 1rem; overflow: auto; } .modal-actions { display: flex; justify-content: flex-end; gap: .5rem; padding: .8rem 1.2rem 1.1rem; border-top: 1px solid var(--line); }
 #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 95; width: 100%; height: 100%; }
 .pop-in { animation: pop .3s; }
@@ -223,7 +223,7 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 
 /* Игры: разделы, предложения, аркады */
 .game-sec-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 1.4rem; } .game-sec-head h2 { margin: 0; font-size: 1.15rem; }
-.sent-lvl { display: flex; align-items: center; gap: .4rem; } .sent-lvl .input { width: auto; padding: .3rem .6rem; }
+.sent-lvl { display: flex; align-items: center; gap: .4rem; } .sent-lvl .input { width: 130px; padding: .3rem .6rem; }
 .options.one { grid-template-columns: 1fr; } .options.one .opt { text-align: left; justify-content: flex-start; font-size: 1rem; padding: .8rem 1rem 0.8rem 2rem; }
 .q-text.small { font-size: 1.1rem; font-weight: 500; padding: .2rem 0; color: var(--muted); }
 .sent-box { display: grid; gap: .5rem; justify-items: center; width: 100%; }
@@ -325,7 +325,7 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 /* Игры с управлением героем */
 .walk { max-width: 980px; }
 .wk-top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; } .wk-coins { font-size: 1.9rem; line-height: 1; } .wk-pills { display: flex; gap: .4rem; }
-.wk-bar { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: .5rem 0; } .wk-src { display: flex; align-items: center; gap: .3rem; margin-left: auto; } .wk-src .input { width: auto; max-width: 240px; padding: .3rem .6rem; font-size: .85rem; }
+.wk-bar { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: .5rem 0; } .wk-src { display: flex; align-items: center; gap: .3rem; margin-left: auto; } .wk-src .input { width: 240px; max-width: 240px; padding: .3rem .6rem; font-size: .85rem; }
 .wk-bar .btn.afford { border-color: var(--ok); background: var(--ok-soft); }
 .wk-banner { min-height: 2.6em; padding: .5rem .9rem; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); margin-bottom: .5rem; font-size: 1.05rem; display: flex; flex-direction: column; justify-content: center; }
 .wk-target { font-size: 1.5rem; color: var(--accent); } .wk-hint { font-weight: 600; } .wk-reveal { color: var(--bad); }
@@ -368,7 +368,7 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .wk-locs { display: grid; gap: .5rem; }
 .wk-loc { display: grid; grid-template-columns: auto 1fr auto; gap: .8rem; align-items: center; text-align: left; padding: .7rem .9rem; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
 .wk-loc.on { border-color: var(--accent); background: var(--accent-soft); } .wk-loc.locked { opacity: .55; cursor: not-allowed; } .wk-loc-ico { font-size: 2rem; } .wk-loc-t { display: grid; }
-@media (max-width: 640px) { .wk-locpill { display: none; } .wk-coins { font-size: 1.5rem; } .wk-bar .btn.sm { padding: .3rem .55rem; } .wk-src .input { max-width: 150px; } .wk-banner { min-height: 2.2em; padding: .35rem .7rem; font-size: .95rem; } .wk-target { font-size: 1.25rem; } .walk > p.small { display: none; } }
+@media (max-width: 640px) { .wk-locpill { display: none; } .wk-coins { font-size: 1.5rem; } .wk-bar .btn.sm { padding: .3rem .55rem; } .wk-src .input { width: 150px; max-width: 150px; } .wk-banner { min-height: 2.2em; padding: .35rem .7rem; font-size: .95rem; } .wk-target { font-size: 1.25rem; } .walk > p.small { display: none; } }
 
 /* Кнопка «Назад» в шапке и плавность */
 .back-btn { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--line); background: var(--surface2); color: var(--text); font: inherit; font-weight: 700; font-size: .92rem; padding: .35rem .8rem .35rem .55rem; border-radius: 999px; cursor: pointer; transition: background-color .15s, transform .12s; }
@@ -378,10 +378,22 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 @media (max-width: 380px) { body.has-back .logo { display: none; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-#view.view-in > * { animation: viewIn .26s cubic-bezier(.2, .8, .3, 1) both; }
 .btn, .icon-btn, .chip, .tile, .nav a { transition: background-color .15s, border-color .15s, color .15s, transform .12s, box-shadow .15s; }
 .btn:active:not(:disabled), .icon-btn:active, .tile:active { transform: scale(.97); }
 .tile-grid > * { content-visibility: auto; contain-intrinsic-size: auto 96px; }
-@media (prefers-reduced-motion: reduce) { #view.view-in > *, .modal.anim, .modal.anim .modal-box { animation: none; } }
+.col-card, .word-row, .game-card, .cw-row, .text-card { content-visibility: auto; contain-intrinsic-size: auto 110px; }
+.word-row { contain-intrinsic-size: auto 52px; }
+/* индикатор загрузки тяжёлых экранов и первого запуска */
+body.loading::after { content: ''; position: fixed; top: 12px; left: 50%; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%; border: 3px solid var(--accent-soft); border-top-color: var(--accent); animation: spin .6s linear infinite; z-index: 200; }
+body.loading #view { opacity: .55; transition: opacity .1s; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.boot { display: grid; place-items: center; gap: .8rem; min-height: 60vh; color: var(--muted); } .boot .zh { font-size: 3rem; } .boot i { width: 34px; height: 34px; border-radius: 50%; border: 4px solid var(--accent-soft); border-top-color: var(--accent); animation: spin .7s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .modal.anim, .modal.anim .modal-box { animation: none; } }
 .wk-hand { display: flex; gap: .7rem; align-items: center; } .wk-hand > div:last-child { display: grid; }
 .cr-canvas { width: min(100%, calc(76vh * 540 / 760)); margin: 0 auto; cursor: grab; }
+/* выпадающие списки не измеряют все пункты при каждой перекладке (ширина задаётся снаружи) — заметно быстрее экраны с длинными списками подборок */
+select.input { contain: inline-size; }
+.wk-perks { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .6rem; }
+.wk-perk { display: grid; justify-items: center; text-align: center; gap: .3rem; padding: .9rem .7rem; border-radius: 16px; border: 2px solid var(--line); background: var(--surface); color: var(--text); font: inherit; }
+button.wk-perk { cursor: pointer; transition: transform .12s, border-color .12s, box-shadow .12s; } button.wk-perk:hover { border-color: var(--gold); box-shadow: 0 6px 18px rgba(0,0,0,.12); transform: translateY(-2px); }
+.wk-perk-ico { font-size: 2.2rem; line-height: 1; } .wk-perks.own .wk-perk { padding: .6rem; } .wk-perks.own .wk-perk-ico { font-size: 1.6rem; }

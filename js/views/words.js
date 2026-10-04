@@ -38,13 +38,13 @@
   function list() {
     const view = document.getElementById('view');
     const box = h('div.word-list'), count = h('span.muted');
-    let shown = 200;
+    let shown = 80;
     function draw(reset) {
-      if (reset === true) shown = 200;
+      if (reset === true) shown = 80;
       const l = HZ.words.filter(matches);
       ui.clear(box).append(...l.slice(0, shown).map(row));
       if (!l.length) box.append(h('p.muted', 'Ничего не найдено'));
-      if (l.length > shown) box.append(h('button.btn', { onclick: () => { shown += 300; draw(); } }, `Показать ещё (${l.length - shown})`));
+      if (l.length > shown) box.append(h('button.btn', { onclick: () => { shown += 200; draw(); } }, `Показать ещё (${l.length - shown})`));
       count.textContent = `${l.length} из ${HZ.words.length}`;
     }
     const sel = (key, opts) => { const s = h('select.input', opts.map(([v, t]) => h('option', { value: v }, t))); s.value = filters[key]; s.onchange = () => { filters[key] = s.value; draw(true); }; return s; };
@@ -77,7 +77,8 @@
         return h((x ? 'a' : 'div') + '.comp', x ? { href: '#/char/' + c } : {}, h('span.g', c), h('span.t', x ? x.py + ' — ' + x.m.split(/[;,]/)[0] : ''));
       })),
       e.chars.length > 1 ? h('p.muted.small', e.chars.join(' + ') + ' = ' + e.ch + '. Нажмите на иероглиф, чтобы увидеть его мнемонику.') : null));
-    if (e.chars.length > 1) {
+    if (e.mn) root.append(h('section.cd-sec', h('h4', '💡 Как запомнить'), h('p.mnemonic', e.mn)));
+    if (e.chars.length > 1 && !e.mn) {
       const hints = e.chars.map(c => HZ.byChar[c]).filter(Boolean);
       if (hints.length) root.append(h('section.cd-sec', h('h4', '💡 Подсказки по составу'), h('ul.list', hints.map(x => h('li', h('span.zh', x.ch), ' ', ui.py(x.py), h('span.muted', ' — ' + x.m)))),
         h('p.muted.small', 'Придумайте короткую историю, связав значения иероглифов — так слово запоминается лучше.')));
