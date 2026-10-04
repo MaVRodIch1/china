@@ -1720,7 +1720,7 @@
       }
       return out;
     }
-    function perkPick() {
+    function perkPick(rerolled) {
       if (!v.perkPts) return perksDialog();
       const ch = perkChoices();
       if (!ch.length) { v.perkPts = 0; return ui.toast('Все перки уже на максимуме!', 'gold'); }
@@ -1733,7 +1733,9 @@
           if (v.perkPts > 0) setTimeout(perkPick, 250);
         } }, h('span.wk-perk-ico', P0.ico), h('b', P0.name), h('small.chip.sm' + (lv ? '.done' : '.new'), lv ? `ур. ${lv} → ${lv + 1}` : 'новый'), h('span.muted.small', P0.desc(lv + 1)));
       }));
-      ui.modal(`⭐ Уровень ${heroLvl(v)}: выберите умение${v.perkPts > 1 ? ` (ещё ${v.perkPts})` : ''}`, h('div', cards), [{ label: 'Позже', onclick: () => { hud(); } }]);
+      const acts = [{ label: 'Позже', onclick: () => { hud(); } }];
+      if (!rerolled) acts.unshift({ label: '🎲 Другие варианты', keep: true, onclick: () => { perkPick(true); } });
+      ui.modal(`⭐ Уровень ${heroLvl(v)}: выберите умение${v.perkPts > 1 ? ` (ещё ${v.perkPts})` : ''}`, h('div', cards, h('p.muted.small.center', rerolled ? 'Варианты уже обновлены — выберите одно умение.' : 'Не нравится выбор? Один раз можно взять другие три.')), acts);
     }
     function perksDialog() {
       if (v.perkPts) return perkPick();

@@ -50,6 +50,13 @@
         blocks.push({ x0: bx, x1: bx + w, z: bz, slide: level >= 4 && rnd() < .5 ? .8 + rnd() : 0, ph: rnd() * 6 });
       }
     }
+    // ворота-множители (как в Join Clash): слева и справа разные числа — выбирайте выгодные
+    const bonus = [];
+    for (let i = 0; i < Q; i++) {
+      const bz = 46 + i * 46 + 6 + rnd() * 3, N = 3 + Math.floor(level / 2), opts = [{ t: '+' + N, f: n => n + N, good: 1 }, { t: '×2', f: n => Math.min(n * 2, n + 25), good: 1 }, { t: '−' + Math.max(2, N - 1), f: n => n - Math.max(2, N - 1), good: 0 }, { t: '÷2', f: n => Math.ceil(n / 2), good: 0 }, { t: '+' + (N * 2), f: n => n + N * 2, good: 1 }];
+      const a = opts[Math.floor(rnd() * opts.length)]; let b2 = opts[Math.floor(rnd() * opts.length)]; if (b2 === a) b2 = opts[(opts.indexOf(a) + 2) % opts.length];
+      bonus.push({ z: bz, o: rnd() < .5 ? [a, b2] : [b2, a], passed: false, pick: -1 });
+    }
     const FIN = LEN + 14;                        // где стоит красная толпа
     const foes = Array.from({ length: 6 + level * 4 }, (_, i) => ({ x: ((i % 6) - 2.5) * .62 + (Math.random() - .5) * .2, z: FIN + Math.floor(i / 6) * .7, ph: Math.random() * 6, dead: false }));
     const boss = { x: 0, z: FIN + Math.ceil(foes.length / 6) * .7 + 3, hp: 8 + level * 4, max: 8 + level * 4, hit: 0 };
@@ -119,6 +126,15 @@
         ctx.font = `700 ${Math.max(7, fs)}px ${zh ? '"Noto Serif SC","Songti SC",serif' : 'system-ui, sans-serif'}`;
         ctx.fillText(txt, (a.x + b.x) / 2, (a.y + b.y) / 2 + 1);
       }
+    }
+    function drawBonus(g) {
+      g.o.forEach((o, i) => {
+        const x0 = i ? .05 : -ROAD, x1 = i ? ROAD : -.05, col = g.passed ? (i === g.pick ? (o.good ? 'rgba(46,155,230,.55)' : 'rgba(230,60,60,.55)') : 'rgba(150,150,170,.25)') : o.good ? 'rgba(60,170,255,.32)' : 'rgba(255,90,90,.32)';
+        quad([[x0, 0, g.z], [x1, 0, g.z], [x1, 2, g.z], [x0, 2, g.z]], col, o.good ? 'rgba(30,110,200,.7)' : 'rgba(180,30,30,.7)');
+        const c = pr((x0 + x1) / 2, 1.1, g.z); if (!c) return;
+        ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = Math.max(2, c.s * .06); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `900 ${Math.max(10, c.s * .9)}px system-ui, sans-serif`; ctx.strokeText(o.t, c.x, c.y); ctx.fillText(o.t, c.x, c.y);
+      });
     }
     function drawBlock(b) {
       const off = b.slide ? Math.sin(t * b.slide + b.ph) * 1.2 : 0, x0 = Math.max(-ROAD, b.x0 + off), x1 = Math.min(ROAD, b.x1 + off);
@@ -202,6 +218,11 @@
           const off = b.slide ? Math.sin(t * b.slide + b.ph) * 1.2 : 0, x0 = b.x0 + off, x1 = b.x1 + off;
           for (const m of members.slice()) { const w = wpos(m); if (w.x > x0 - .1 && w.x < x1 + .1 && Math.abs(w.z - b.z) < .3) { killMember(m); if (state !== 'run') return; } }
         }
+        for (const g of bonus) if (!g.passed && P.z >= g.z) {
+          g.passed = true; g.pick = P.x < 0 ? 0 : 1; const o = g.o[g.pick], n0 = members.length, n1 = Math.max(1, o.f(n0));
+          if (n1 > n0) { addMembers(n1 - n0, P.x, P.z + .4); ui.sfx('ok'); } else { for (let j = 0; j < n0 - n1; j++) killMember(members[members.length - 1]); ui.sfx('bad'); }
+          floatMsg(`${o.t}  👥 ${n0} → ${members.length}`, n1 >= n0 ? '#2e9be6' : '#e64646');
+        }
         if (P.z >= FIN - 3) { state = 'clash'; ui.sfx('level'); floatMsg('⚔️ Битва!', '#ef4b4b'); }
       } else if (state === 'clash') {
         const alive = foes.filter(f => !f.dead);
@@ -248,6 +269,7 @@
       for (const hs of houses) if (hs.z1 > camZ + .5 && hs.z0 < far) items.push([hs.z1 + 50, () => drawHouse(hs)]);
       for (const g of gates) if (g.z > camZ + .5 && g.z < far) items.push([g.z, () => drawGate(g)]);
       for (const b of blocks) if (b.z > camZ + .5 && b.z < far) items.push([b.z, () => drawBlock(b)]);
+      for (const g of bonus) if (g.z > camZ + .5 && g.z < far) items.push([g.z, () => drawBonus(g)]);
       for (const p of idles) if (!p.taken && p.z > camZ + .5 && p.z < far) items.push([p.z, () => person(p.x, p.z, COL.idle, COL.idleD, p.ph + t * 2, false)]);
       for (const f of foes) if (!f.dead && f.z < far) items.push([f.z, () => person(f.x, f.z, COL.foe, COL.foeD, f.ph, state === 'clash')]);
       if (boss.hp > 0 && boss.z < far) items.push([boss.z, () => { person(boss.x, boss.z, boss.hit > 0 ? '#ffffff' : COL.foe, COL.foeD, t * 2, false, 2.4); const p = pr(boss.x, 4.2, boss.z); if (p) { ctx.fillStyle = 'rgba(0,0,0,.55)'; rr(ctx, p.x - 40, p.y - 9, 80, 10, 5); ctx.fill(); ctx.fillStyle = '#ef4b4b'; rr(ctx, p.x - 38, p.y - 7, 76 * boss.hp / boss.max, 6, 3); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '800 11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('👑 ' + boss.hp, p.x, p.y - 16); } }]);

@@ -34,6 +34,12 @@ for f in sorted(glob.glob(P('tools/content/sent2_*.tsv'))):
     for l in open(f, encoding='utf-8'):
         a = l.rstrip('\n').split('\t')
         if len(a) == 3: sents2[a[0]] = (a[1], a[2])
+# вторые примеры иероглифов
+csent = {}
+for f in sorted(glob.glob(P('tools/content/csent_*.tsv'))):
+    for l in open(f, encoding='utf-8'):
+        a = l.rstrip('\n').split('\t')
+        if len(a) == 3: csent[a[0]] = (a[1], a[2])
 # подсказки «как запомнить» для слов
 mnw = {}
 for f in sorted(glob.glob(P('tools/content/mn_*.tsv'))): mnw.update(tsv(f))
@@ -119,6 +125,7 @@ for c in order:
     rad = RADNORM.get(e['rad'], e['rad']); rad_used[rad] = gl.get(rad, '')
     py = PYFIX.get(c, e['py'])
     sent = f"{r[5]}|{syl(r[5])}|{r[6]}" if r[5] else ''
+    if sent and c in csent: z2, r2 = csent[c]; sent += f";{z2}|{syl(z2)}|{r2.replace(';', ',')}"  # второй пример иероглифа
     lines.append([c, py, r[1], e['strokes'], rad, lv_of(c), r[2], comps_str(c, e), r[3], r[4], words_str(c), sent])
 rad_js = ','.join(f"{q(k)}:{q(v)}" for k, v in rad_used.items() if v)
 # данные — строкой JSON: браузер разбирает JSON.parse заметно быстрее, чем такой же объём кода

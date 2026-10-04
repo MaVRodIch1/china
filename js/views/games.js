@@ -337,7 +337,7 @@
         if (!list.length) return null;
         return h('section', h('div.game-sec-head', h('h2', grp), grp === 'Предложения' ? h('label.sent-lvl', h('span.muted.small', 'Уровень предложений: '), lvl) : null),
           h('div.game-grid', list.map(g => h('button.game-card' + (g.disabled ? '.disabled' : ''), { type: 'button', onclick: () => { if (g.disabled) return ui.toast(g.desc); g.go(); } },
-            h('div.ico', g.ico), h('b', g.name), h('span.muted', g.desc)))));
+            h('div.ico', { style: { background: `hsl(${(grp.length * 47 + g.name.length * 23) % 360} 85% 60% / .18)` } }, g.ico), h('b', g.name), h('span.muted.gdesc', g.desc)))));
       })));
   }
 

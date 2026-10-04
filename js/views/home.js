@@ -36,6 +36,20 @@
       h('div.ring-in', h('b', label), h('span', sub)));
   }
 
+  /** «Знак дня» и «Слово дня»: каждый день новые, с подсказкой и кликабельным примером. */
+  function daily() {
+    const day = Math.floor(Date.now() / 864e5), pick = (arr, salt) => arr.length ? arr[(day * 7919 + salt) % arr.length] : null;
+    const cs = HZ.chars.filter(c => c.mn && c.sents.length && c.h <= HZ.HSK_MAX), ws = HZ.words.filter(w => w.mn && w.h >= 1);
+    const known = e => HZ.srs.get(e.key || e.ch);
+    const c = pick(cs.filter(x => !known(x)).length ? cs.filter(x => !known(x)) : cs, 13), w = pick(ws.filter(x => !known(x)).length ? ws.filter(x => !known(x)) : ws, 101);
+    const card = (e, title, href) => e ? h('section.panel.daily',
+      h('div.daily-top', h('span.chip.sm', title), h('span.chip.sm', HZ.lvName(e.h))),
+      h('div.daily-head', h('button.daily-ch.zh', { type: 'button', title: 'Подробнее и в подборку', onclick: () => HZ.wordPop(e) }, e.ch), h('div', h('div.row', ui.py(e.py, 'lg'), ui.speakBtn(e.ch)), h('div.daily-m', e.m))),
+      h('p.mnemonic.small', e.mn),
+      e.sents[0] ? HZ.tapSent(e.sents[0]) : null,
+      h('div.row.wrap', h('a.btn.sm', { href }, 'Открыть карточку'), h('button.btn.sm', { type: 'button', onclick: () => HZ.wordPop(e) }, '＋ В подборку'))) : null;
+    return h('div.grid2.daily-grid', card(c, '🀄 Знак дня', c ? '#/char/' + encodeURIComponent(c.ch) : '#/'), card(w, '📘 Слово дня', w ? '#/word/' + encodeURIComponent(w.ch) : '#/'));
+  }
   function home() {
     const view = document.getElementById('view');
     const cnt = srs.counts();
@@ -66,6 +80,8 @@
         h('a.stat-card', { href: '#/study/new' }, h('span.ico', '✨'), h('b', avail), h('span', 'новых на сегодня')),
         h('a.stat-card', { href: '#/stats' }, h('span.ico', '🔥'), h('b', st), h('span', HZ.plural(st, 'день подряд', 'дня подряд', 'дней подряд'))),
         h('a.stat-card', { href: '#/stats' }, h('span.ico', '🏅'), h('b', 'Ур. ' + li.lvl), h('span', li.title + ` · ${li.into}/${li.need} XP`))),
+
+      daily(),
 
       h('div.grid2',
         h('section.panel', h('h3', 'Прогресс обучения'),
