@@ -95,7 +95,7 @@
       h('a.chip.link', { href: '#/word/' + encodeURIComponent(w.ch), title: w.m }, w.ch + ' · ' + w.m.split(/[;,(]/)[0].trim())))));
     // Предложения
     if (e.sents.length) root.append(h('section.cd-sec', h('h4', '💬 Примеры и живая речь'), e.sents.map((s, i) =>
-      h('div.sent', h('div.zh', s.z, ui.speakBtn(s.z, 'sm'), i ? h('span.tag.sem', 'в живой речи') : null), h('div', ui.py(s.p)), h('div.muted', s.m)))));
+      HZ.tapSent(s, i ? h('span.tag.sem', 'в живой речи') : null))));
 
     if (!opts.compact) {
       root.append(h('section.cd-sec', h('h4', '✒️ Порядок черт'), strokeBlock(e)));

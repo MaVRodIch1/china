@@ -119,12 +119,14 @@ for c in order:
     rad = RADNORM.get(e['rad'], e['rad']); rad_used[rad] = gl.get(rad, '')
     py = PYFIX.get(c, e['py'])
     sent = f"{r[5]}|{syl(r[5])}|{r[6]}" if r[5] else ''
-    lines.append('    [' + ','.join([q(c), q(py), q(r[1]), str(e['strokes']), q(rad), str(lv_of(c)), q(r[2]), q(comps_str(c, e)), q(r[3]), q(r[4]), q(words_str(c)), q(sent)]) + ']')
+    lines.append([c, py, r[1], e['strokes'], rad, lv_of(c), r[2], comps_str(c, e), r[3], r[4], words_str(c), sent])
 rad_js = ','.join(f"{q(k)}:{q(v)}" for k, v in rad_used.items() if v)
+# данные — строкой JSON: браузер разбирает JSON.parse заметно быстрее, чем такой же объём кода
+def jsj(x): return "JSON.parse('" + json.dumps(x, ensure_ascii=False, separators=(',', ':')).replace('\\', '\\\\').replace("'", "\\'") + "')"
 open(P('js/data/hsk3-chars.js'), 'w', encoding='utf-8').write(
     f"/* Иероглифы HSK 3.0 (уровни 1–{OUT - 1}), добавленные к стартовому набору. Сгенерировано tools/build3.py.\n"
     f" * Уровни — по первому слову HSK 3.0 с иероглифом; {OUT} — вне списка. Источники: complete-hsk-vocabulary, Make Me a Hanzi; русские тексты — tools/content. */\n"
-    "HZ.addPack({\n  id: 'hsk3',\n  name: 'HSK 3.0',\n  radicals: {" + rad_js + "},\n  rows: [\n" + ',\n'.join(lines) + "\n  ]\n});\n")
+    "HZ.addPack({\n  id: 'hsk3',\n  name: 'HSK 3.0',\n  radicals: {" + rad_js + "},\n  rows: " + jsj(lines) + "\n});\n")
 
 # ---------- слова ----------
 wl = []
@@ -132,12 +134,12 @@ for w in words:
     z, r = sents[w['w']]
     sent = f"{z}|{syl(z)}|{r}"
     if w['w'] in sents2: z2, r2 = sents2[w['w']]; sent += f"¶{z2}|{syl(z2)}|{r2}"  # ¶ разделяет примеры
-    row = [q(w['w']), q(w['py']), q(ru_words[w['w']]), str(w['lv']), q(','.join(w['pos'][:2])), q(sent)]
-    if w['w'] in mnw: row.append(q(mnw[w['w']]))
-    wl.append('  [' + ','.join(row) + ']')
+    row = [w['w'], w['py'], ru_words[w['w']], w['lv'], ','.join(w['pos'][:2]), sent]
+    if w['w'] in mnw: row.append(mnw[w['w']])
+    wl.append(row)
 open(P('js/data/hsk-words.js'), 'w', encoding='utf-8').write(
     f"/* Слова HSK 3.0, уровни 1–{OUT - 1} ({len(words)} слов). Формат: [слово, пиньинь, перевод, уровень, части речи, примеры «иероглифы|пиньинь|перевод» через ¶, подсказка «как запомнить»]. Сгенерировано tools/build3.py. */\n"
-    "HZ.addWords([\n" + ',\n'.join(wl) + "\n]);\n")
+    "HZ.addWords(" + jsj(wl) + ");\n")
 
 # ---------- уровни стартовых иероглифов ----------
 pat = re.compile(r"^(    \['(.)','[^']*','[^']*',\d+,'[^']*',)(\d+),", re.M)

@@ -84,10 +84,10 @@
         h('p.muted.small', 'Придумайте короткую историю, связав значения иероглифов — так слово запоминается лучше.')));
     }
     if (e.sents.length) root.append(h('section.cd-sec', h('h4', e.sents.length > 1 ? '💬 Примеры' : '💬 Пример'), e.sents.map(s =>
-      h('div.sent', h('div.zh', s.z, ui.speakBtn(s.z, 'sm')), h('div', ui.py(s.p)), h('div.muted', s.m)))));
+      HZ.tapSent(s))));
     const my = e.my || [];
     if (my.length || !opts.compact) root.append(h('section.cd-sec', h('h4', '📝 Мои примеры'),
-      my.length ? my.map(s => h('div.sent', h('div.zh', s.z, ui.speakBtn(s.z, 'sm')), s.p ? h('div', ui.py(s.p)) : null, s.m ? h('div.muted', s.m) : null)) : h('p.muted.small', 'Добавьте свои предложения с этим словом — они появятся и в играх с предложениями.'),
+      my.length ? my.map(s => HZ.tapSent(s)) : h('p.muted.small', 'Добавьте свои предложения с этим словом — они появятся и в играх с предложениями.'),
       !opts.compact ? h('div.row.wrap', h('button.btn.sm', { onclick: () => wordUI.examples(e.key, () => HZ.router.render()) }, '＋ Добавить пример'),
         e.custom ? h('button.btn.sm', { onclick: () => wordUI.editWord(e.key) }, '✎ Изменить слово') : null) : null));
     if (!opts.compact) root.append(h('section.cd-sec', h('h4', '🗂 В подборку'), toCollection(e)));

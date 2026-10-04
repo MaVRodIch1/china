@@ -60,12 +60,21 @@
   HZ.words = [];          // слова (HSK)
   HZ.wordByKey = {};      // 'w:слово' -> запись
   /** Добавить слова: [слово, пиньинь, перевод, уровень HSK, части речи]. Запись совместима с иероглифом (ch, py, m, h …). */
+  // примеры и тон слова разбираются только при первом обращении — запуск быстрее
+  const own = (o, k, v) => { Object.defineProperty(o, k, { value: v, writable: true, configurable: true, enumerable: true }); return v; };
+  const WORD = {
+    get sents() { return own(this, 'sents', this._s ? this._s.split('¶').map(x => { const [z, p, t] = x.split('|'); return { z, p, m: t }; }) : []); },
+    set sents(v) { own(this, 'sents', v); },
+    get tone() { return own(this, 'tone', HZ.firstTone(this.py)); },
+    set tone(v) { own(this, 'tone', v); }
+  };
   HZ.addWords = function (list) {
     list.forEach(([w, py, m, h, pos, sent, mn]) => {
       const key = 'w:' + w;
       if (HZ.wordByKey[key]) return;
-      const e = { ch: w, key, py, m, h, pos: pos ? pos.split(',') : [], s: [...w].length, r: '', th: [], comps: [], mn: mn || '', et: '', words: [], sents: sent ? sent.split('¶').map(x => (([z, p, t]) => ({ z, p, m: t }))(x.split('|'))) : [],
-        isWord: true, chars: [...w].filter(c => c >= '\u4e00' && c <= '\u9fff'), idx: HZ.words.length, tone: HZ.firstTone(py) };
+      const e = Object.create(WORD);
+      Object.assign(e, { ch: w, key, py, m, h, pos: pos ? pos.split(',') : [], s: [...w].length, r: '', th: [], comps: [], mn: mn || '', et: '', words: [], _s: sent || '',
+        isWord: true, chars: [...w].filter(c => c >= '\u4e00' && c <= '\u9fff'), idx: HZ.words.length });
       HZ.words.push(e); HZ.wordByKey[key] = e;
     });
   };

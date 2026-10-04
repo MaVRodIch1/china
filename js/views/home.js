@@ -1,6 +1,7 @@
 /* Главный экран, статистика, настройки. */
 (function () {
   'use strict';
+  const WD = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
   const HZ = window.HZ, ui = HZ.ui, h = ui.h, store = HZ.store, srs = HZ.srs;
 
   /* ---- персональные рекомендации ---- */
@@ -75,7 +76,7 @@
               h('li', h('i.dot.new'), h('b', cnt.fresh), ' новых'),
               h('li', h('i.dot.hard'), h('b', hard), ' сложных'))),
           h('div.stacked', h('i.done', { style: { flex: cnt.learned } }), h('i.learn', { style: { flex: cnt.learning } }), h('i.new', { style: { flex: cnt.fresh } })),
-          h('div.week', week.map(w => h('div.wday', h('i', { style: { height: Math.max(4, w.v / maxW * 44) + 'px' }, title: `${w.v} повторений` }), h('small', w.d.toLocaleDateString('ru-RU', { weekday: 'short' }))))),
+          h('div.week', week.map(w => h('div.wday', h('i', { style: { height: Math.max(4, w.v / maxW * 44) + 'px' }, title: `${w.v} повторений` }), h('small', WD[w.d.getDay()])))),
           h('p.muted.small', `Сегодня: повторений ${t.rev}, новых ${t.newc}, XP ${t.xp}`)),
 
         h('section.panel', h('h3', 'Задания на сегодня'),
@@ -143,7 +144,7 @@
         h('div.stat-card', h('span.ico', '🧠'), h('b', cnt.learned), h('span', `выучено из ${cnt.total}`))),
       h('section.panel', h('h3', 'Повторения за 14 дней'), h('svg.chart', { viewBox: `0 0 ${W} ${H}`, html: bars, role: 'img', 'aria-label': 'График повторений' }), h('p.muted.small', 'Яркие столбцы — верные ответы, бледные — все повторения.')),
       h('div.grid2',
-        h('section.panel', h('h3', 'Прогноз повторений'), h('div.week', fc.map((v, i) => h('div.wday', h('b.small', v), h('i', { style: { height: Math.max(4, v / fmx * 44) + 'px' } }), h('small', i < 2 ? names[i] : HZ.addDays(new Date(), i).toLocaleDateString('ru-RU', { weekday: 'short' })))))),
+        h('section.panel', h('h3', 'Прогноз повторений'), h('div.week', fc.map((v, i) => h('div.wday', h('b.small', v), h('i', { style: { height: Math.max(4, v / fmx * 44) + 'px' } }), h('small', i < 2 ? names[i] : WD[HZ.addDays(new Date(), i).getDay()]))))),
         h('section.panel', h('h3', 'Иероглифы по уровням HSK'), hskRows, h('h3.mt', 'Слова по уровням HSK'), wRows)),
       h('div.grid2',
         h('section.panel', h('h3', 'Точность по тонам'), toneRows, h('p.muted.small', 'Тон первого слога иероглифа.')),
