@@ -41,7 +41,7 @@
     return BANK;
   }
   const text = s => s.tokens.map(t => t.pre + t.w + t.suf).join('');
-  const LV = { '1': 'HSK 1', '2': 'HSK 1–2', '3': 'HSK 1–3', '4': 'HSK 1–4', mine: 'Мои слова' };
+  const LV = { '1': 'HSK 1', '2': 'HSK 1–2', '3': 'HSK 1–3', '4': 'HSK 1–4', '5': 'HSK 1–5', mine: 'Мои слова' };
   function sentPool(minTok = 1, maxTok = 99) {
     const lv = store.s.settings.sentLvl || '1';
     let list = bank().filter(s => s.tokens.length >= minTok && s.tokens.length <= maxTok);

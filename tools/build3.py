@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Сборка данных HSK 3.0 (уровни 1–4): js/data/hsk3-chars.js, js/data/hsk-words.js, обновление уровней в hsk-starter.js.
+"""Сборка данных HSK 3.0 (уровни 1–5): js/data/hsk3-chars.js, js/data/hsk-words.js, обновление уровней в hsk-starter.js.
 Вход: tools/cache/draft3.json (HSK 3.0), tools/cache/draft.json (старый список — только для уже существующих иероглифов),
 русские тексты в tools/content/. Запуск: HSK_STD=new python3 tools/prep.py && HSK_STD=old python3 tools/prep.py && python3 tools/build3.py"""
 import json, re, os, sys, glob
@@ -28,6 +28,12 @@ for f in sorted(glob.glob(P('tools/content/sent_*.tsv'))):
     for l in open(f, encoding='utf-8'):
         a = l.rstrip('\n').split('\t')
         if len(a) == 3: sents[a[0]] = (a[1], a[2])
+# вторые примеры (для слов HSK 1–3)
+sents2 = {}
+for f in sorted(glob.glob(P('tools/content/sent2_*.tsv'))):
+    for l in open(f, encoding='utf-8'):
+        a = l.rstrip('\n').split('\t')
+        if len(a) == 3: sents2[a[0]] = (a[1], a[2])
 gl = tsv(P('tools/content/ru_glyphs.tsv'))
 for k, v in re.findall(r"'(.)': '([^']+)'", starter.split('rows:')[0]): gl.setdefault(k, v)
 
@@ -41,6 +47,7 @@ def load_rows(pattern):
 rows_old = load_rows('tools/content/ru_chars_*.txt')   # 492 иероглифа первой версии
 rows_new = load_rows('tools/content/ru3_chars_*.txt')  # 324 новых (HSK 3.0, уровни 1–3)
 rows_new.update(load_rows('tools/content/ru4_chars_*.txt'))  # 269 новых (HSK 3.0, уровень 4)
+rows_new.update(load_rows('tools/content/ru5_chars_*.txt'))  # 289 новых (HSK 3.0, уровень 5)
 
 PUNCT = {'，': ',', '。': '.', '！': '!', '？': '?', '、': ',', '；': ';', '：': ':', '…': '…'}
 def tone(s):
@@ -120,9 +127,11 @@ open(P('js/data/hsk3-chars.js'), 'w', encoding='utf-8').write(
 wl = []
 for w in words:
     z, r = sents[w['w']]
-    wl.append('  [' + ','.join([q(w['w']), q(w['py']), q(ru_words[w['w']]), str(w['lv']), q(','.join(w['pos'][:2])), q(f"{z}|{syl(z)}|{r}")]) + ']')
+    sent = f"{z}|{syl(z)}|{r}"
+    if w['w'] in sents2: z2, r2 = sents2[w['w']]; sent += f"¶{z2}|{syl(z2)}|{r2}"  # ¶ разделяет примеры
+    wl.append('  [' + ','.join([q(w['w']), q(w['py']), q(ru_words[w['w']]), str(w['lv']), q(','.join(w['pos'][:2])), q(sent)]) + ']')
 open(P('js/data/hsk-words.js'), 'w', encoding='utf-8').write(
-    f"/* Слова HSK 3.0, уровни 1–{OUT - 1} ({len(words)} слов). Формат: [слово, пиньинь, перевод, уровень, части речи, предложение]. Сгенерировано tools/build3.py. */\n"
+    f"/* Слова HSK 3.0, уровни 1–{OUT - 1} ({len(words)} слов). Формат: [слово, пиньинь, перевод, уровень, части речи, примеры «иероглифы|пиньинь|перевод» через ¶]. Сгенерировано tools/build3.py. */\n"
     "HZ.addWords([\n" + ',\n'.join(wl) + "\n]);\n")
 
 # ---------- уровни стартовых иероглифов ----------

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Шаг 1: собирает из открытых источников «черновик» данных: HSK 3.0 уровни 1–4 (HSK_STD=new) или HSK 2.0 уровни 1–3 (HSK_STD=old).
+"""Шаг 1: собирает из открытых источников «черновик» данных: HSK 3.0 уровни 1–5 (HSK_STD=new) или HSK 2.0 уровни 1–3 (HSK_STD=old).
 Источники: complete-hsk-vocabulary (слова, уровни, пиньинь), Make Me a Hanzi (черты, разложение, этимология).
 Результат: tools/cache/draft.json (используется build.py и для написания русских текстов)."""
 import json, re, os, urllib.request
@@ -29,9 +29,9 @@ H = 'https://raw.githubusercontent.com/drkameleon/complete-hsk-vocabulary/main/w
 M = 'https://raw.githubusercontent.com/skishore/makemeahanzi/master/'
 # Основное чтение слова (HSK) там, где автоматический выбор неверен
 WORDFIX = {'得': 'de', '长': 'cháng', '便宜': 'pián yi', '教': 'jiāo', '地': 'dì', '分': 'fēn', '行': 'xíng',
-           '切': 'qiē', '大方': 'dà fang', '大爷': 'dà ye'}
+           '切': 'qiē', '大方': 'dà fang', '大爷': 'dà ye', '挣': 'zhèng'}
 words = []
-MAXLV = int(os.environ.get('HSK_MAX', '4')) if STD == 'new' else 3   # HSK 3.0 — уровни 1–4
+MAXLV = int(os.environ.get('HSK_MAX', '5')) if STD == 'new' else 3   # HSK 3.0 — уровни 1–5
 for lv in range(1, MAXLV + 1):
     for w in json.load(open(get(H % lv, f'{STD}{lv}.json' if STD == 'new' else f'hsk{lv}.json'), encoding='utf-8')):
         py = pyw(w['simplified'], w.get('pos', []))

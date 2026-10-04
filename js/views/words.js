@@ -53,7 +53,7 @@
     const fresh = srs.newWordList().length;
     ui.clear(view).append(h('div.page', h('h1', 'Слова'), tabs('words'),
       h('div.row.wrap', h('a.btn.primary', { href: '#/study/words' }, `▶ Учить слова · ${Math.min(fresh, srs.newWordBudget())}`), h('span.muted.small', `Лимит новых слов в день: ${store.s.settings.newWordsPerDay} (в настройках)`)),
-      h('div.filters.f3', q, sel('hsk', [['', 'Все HSK'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3'], ['4', 'HSK 4'], ['0', 'Мои слова']]),
+      h('div.filters.f3', q, sel('hsk', [['', 'Все HSK'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3'], ['4', 'HSK 4'], ['5', 'HSK 5'], ['0', 'Мои слова']]),
         sel('state', [['', 'Любой статус'], ['new', 'Новые'], ['learn', 'Изучаются'], ['done', 'Выучены']]),
         sel('pos', [['', 'Любая часть речи'], ...Object.entries(POS).filter(([k]) => !['y', 'e'].includes(k))])),
       count, box));
@@ -82,7 +82,7 @@
       if (hints.length) root.append(h('section.cd-sec', h('h4', '💡 Подсказки по составу'), h('ul.list', hints.map(x => h('li', h('span.zh', x.ch), ' ', ui.py(x.py), h('span.muted', ' — ' + x.m)))),
         h('p.muted.small', 'Придумайте короткую историю, связав значения иероглифов — так слово запоминается лучше.')));
     }
-    if (e.sents.length) root.append(h('section.cd-sec', h('h4', '💬 Пример'), e.sents.map(s =>
+    if (e.sents.length) root.append(h('section.cd-sec', h('h4', e.sents.length > 1 ? '💬 Примеры' : '💬 Пример'), e.sents.map(s =>
       h('div.sent', h('div.zh', s.z, ui.speakBtn(s.z, 'sm')), h('div', ui.py(s.p)), h('div.muted', s.m)))));
     const my = e.my || [];
     if (my.length || !opts.compact) root.append(h('section.cd-sec', h('h4', '📝 Мои примеры'),

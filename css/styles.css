@@ -153,7 +153,8 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 #toasts { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 100; display: grid; gap: .5rem; width: min(92vw, 420px); pointer-events: none; }
 .toast { background: var(--text); color: var(--bg); padding: .7rem 1rem; border-radius: 14px; box-shadow: var(--shadow); opacity: 0; transform: translateY(12px); transition: .3s; font-weight: 500; } .toast.in { opacity: 1; transform: none; } .toast.gold { background: var(--gold); color: #1a1a1a; } .toast.warn { background: var(--bad); color: #fff; }
 .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); display: none; align-items: center; justify-content: center; z-index: 90; padding: 1rem; } .modal.open { display: flex; }
-.modal-box { background: var(--surface); border-radius: 20px; width: min(560px, 100%); max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,.3); animation: pop .2s; }
+.modal-box { background: var(--surface); border-radius: 20px; width: min(560px, 100%); max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+.modal.anim { animation: fadeIn .18s ease-out; } .modal.anim .modal-box { animation: pop .24s cubic-bezier(.2, .8, .3, 1); }
 .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.2rem .4rem; } .modal-head h3 { margin: 0; } .modal-body { padding: .4rem 1.2rem 1rem; overflow: auto; } .modal-actions { display: flex; justify-content: flex-end; gap: .5rem; padding: .8rem 1.2rem 1.1rem; border-top: 1px solid var(--line); }
 #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 95; width: 100%; height: 100%; }
 .pop-in { animation: pop .3s; }
@@ -368,3 +369,17 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .wk-loc { display: grid; grid-template-columns: auto 1fr auto; gap: .8rem; align-items: center; text-align: left; padding: .7rem .9rem; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
 .wk-loc.on { border-color: var(--accent); background: var(--accent-soft); } .wk-loc.locked { opacity: .55; cursor: not-allowed; } .wk-loc-ico { font-size: 2rem; } .wk-loc-t { display: grid; }
 @media (max-width: 640px) { .wk-locpill { display: none; } .wk-coins { font-size: 1.5rem; } .wk-bar .btn.sm { padding: .3rem .55rem; } .wk-src .input { max-width: 150px; } .wk-banner { min-height: 2.2em; padding: .35rem .7rem; font-size: .95rem; } .wk-target { font-size: 1.25rem; } .walk > p.small { display: none; } }
+
+/* Кнопка «Назад» в шапке и плавность */
+.back-btn { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--line); background: var(--surface2); color: var(--text); font: inherit; font-weight: 700; font-size: .92rem; padding: .35rem .8rem .35rem .55rem; border-radius: 999px; cursor: pointer; transition: background-color .15s, transform .12s; }
+.back-btn span { font-size: 1.4rem; line-height: .8; margin-top: -2px; } .back-btn:hover { background: var(--accent-soft); border-color: var(--accent); } .back-btn:active { transform: scale(.95); }
+.back-btn[hidden] { display: none; }
+@media (max-width: 640px) { body.has-back .logo b { display: none; } .back-btn { padding: .3rem .7rem .3rem .5rem; } .hud-chip { white-space: nowrap; padding: .25rem .55rem; } body.has-back .hud-chip .bar { display: none; } .topbar { gap: .4rem; padding: .5rem .7rem; } }
+@media (max-width: 380px) { body.has-back .logo { display: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+#view.view-in > * { animation: viewIn .26s cubic-bezier(.2, .8, .3, 1) both; }
+.btn, .icon-btn, .chip, .tile, .nav a { transition: background-color .15s, border-color .15s, color .15s, transform .12s, box-shadow .15s; }
+.btn:active:not(:disabled), .icon-btn:active, .tile:active { transform: scale(.97); }
+.tile-grid > * { content-visibility: auto; contain-intrinsic-size: auto 96px; }
+@media (prefers-reduced-motion: reduce) { #view.view-in > *, .modal.anim, .modal.anim .modal-box { animation: none; } }

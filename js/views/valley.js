@@ -43,6 +43,7 @@
     rate: { tab: 'mods', ico: '⏱️', name: 'Скорострельность', desc: lv => `Оружие перезаряжается на 4% быстрее (сейчас −${lv * 4}%)`, cost: lv => Math.round(150 * Math.pow(1.8, lv)), max: 12 },
     range: { tab: 'mods', ico: '🎯', name: 'Дальность', desc: lv => `+8% к дальности оружия (сейчас +${lv * 8}%)`, cost: lv => Math.round(120 * Math.pow(1.75, lv)), max: 8 },
     crit: { tab: 'mods', ico: '💥', name: 'Критический удар', desc: lv => `Шанс двойного урона ${lv * 5}%`, cost: lv => Math.round(200 * Math.pow(1.8, lv)), max: 10 },
+    reload: { tab: 'mods', ico: '🔄', name: 'Перезарядка', desc: lv => `Магазины автоматов, ружей и огнемётов меняются быстрее (−${Math.round(100 - 100 / (1 + .12 * lv))}% времени; R — перезарядить вручную)`, cost: lv => Math.round(140 * Math.pow(1.65, lv)), max: 10 },
     elem: { tab: 'mods', ico: '🌈', name: 'Сила стихий', desc: lv => `+20% к урону поджога, яда и кровотечения, дольше замедление (сейчас +${lv * 20}%)`, cost: lv => Math.round(250 * Math.pow(1.8, lv)), max: 10 },
     income: { tab: 'eco', ico: '🌾', name: 'Ферма', desc: lv => `+1,2 🪙/с пассивно (сейчас +${(lv * 1.2).toFixed(1)})`, cost: lv => Math.round(50 * Math.pow(1.6, lv)), max: 30 },
     reward: { tab: 'eco', ico: '💎', name: 'Награда за знак', desc: lv => `+15% монет за верный знак (сейчас +${lv * 15}%)`, cost: lv => Math.round(80 * Math.pow(1.7, lv)), max: 30 },
@@ -185,6 +186,37 @@
   const NJ = {"idle":{"w":113,"h":201,"ax":67,"ay":200,"hipL":[42,143],"hipR":[78,143],"eyes":[[62,40,4,2],[79,43,3,2]]},"back":{"w":148,"h":207,"ax":60,"ay":206,"hipL":[33,157],"hipR":[90,157]},"slash":{"w":248,"h":193,"ax":152,"ay":191},"lantern":{"w":193,"h":202,"ax":102,"ay":201},"kick":{"w":196,"h":171,"ax":87,"ay":170},"dual":{"w":286,"h":187,"ax":159,"ay":186},"meditate":{"w":179,"h":152,"ax":91,"ay":152},"spear":{"w":301,"h":181,"ax":160,"ay":181},"dash":{"w":194,"h":176,"ax":138,"ay":175}};
   const NIMG = name => img(`img/hero/ninja-${name}.webp`);
   const NINJA_K = 96 / NJ.idle.h; // рост героя в мире — 96 px
+  /* Декор и интерфейс «Долины» (img/scene — вырезано из листа ассетов) */
+  const SCN = name => img(`img/scene/${name}.webp`);
+  const SCN_OK = im => im && im.complete && im.naturalWidth;
+  // оттенок земли для остальных локаций: [r, g, b, сила]
+  const SCN_TINT = [null, [236, 204, 142, .86], [238, 245, 252, .82], [122, 80, 66, .82], [244, 208, 228, .72]];
+  const TILES = ['tile-grass', 'tile-light', 'tile-grass', 'tile-flowers', 'tile-light', 'tile-grass', 'tile-flowers', 'tile-light', 'tile-rock', 'tile-grass', 'tile-path2', 'tile-light', 'tile-grass', 'tile-flowers'];
+  const tileCache = {};
+  function sceneCanvas(li, name, w, h) { // спрайт, заранее отмасштабированный и окрашенный под локацию
+    const k = li + name + w + 'x' + h;
+    if (tileCache[k]) return tileCache[k];
+    const im = SCN(name); if (!SCN_OK(im)) return null;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d'); x.drawImage(im, 0, 0, w, h);
+    const t = SCN_TINT[li];
+    if (t) {
+      const d = x.getImageData(0, 0, w, h), a = d.data, q = t[3];
+      for (let i = 0; i < a.length; i += 4) { const l = (a[i] * .3 + a[i + 1] * .59 + a[i + 2] * .11) / 165; a[i] = a[i] * (1 - q) + t[0] * l * q; a[i + 1] = a[i + 1] * (1 - q) + t[1] * l * q; a[i + 2] = a[i + 2] * (1 - q) + t[2] * l * q; }
+      x.putImageData(d, 0, 0);
+    }
+    return (tileCache[k] = c);
+  }
+  // декор бамбуковой рощи: [спрайт, ширина в мире, вес, высокий (рисуется по глубине)]
+  const GROVE = [['cherry', 150, 3, 1], ['tree', 112, 5, 1], ['bamboo', 104, 4, 1], ['bamboo2', 48, 5, 1], ['mushroom', 40, 4, 1], ['rock-big', 72, 3, 1], ['rock', 70, 3, 1],
+    ['rock-small', 38, 6, 0], ['bush1', 60, 2, 1], ['bush2', 40, 2, 1], ['bush3', 54, 2, 1], ['bush4', 50, 2, 1], ['bush5', 38, 2, 1], ['bush6', 58, 2, 1],
+    ['tuft1', 32, 4, 0], ['tuft2', 32, 4, 0], ['tuft3', 26, 4, 0], ['flower1', 22, 3, 0], ['flower2', 16, 3, 0], ['flower3', 26, 3, 0], ['flower4', 22, 3, 0], ['flower5', 20, 3, 0], ['flower6', 30, 3, 0], ['flower7', 22, 3, 0],
+    ['leaf1', 14, 1, 0], ['leaf2', 20, 1, 0], ['leaf3', 18, 1, 0], ['leaf4', 18, 1, 0], ['leaf5', 22, 1, 0], ['leaf6', 16, 1, 0],
+    ['lantern', 50, 1.5, 1], ['fence', 92, 1.5, 1], ['fence2', 62, 1, 1], ['stick', 36, 2, 0], ['paperlantern', 16, 1, 0]];
+  const GROVE_W = GROVE.reduce((a, g) => a + g[2], 0);
+  // магазины и перезарядка: [патронов, секунд на перезарядку]
+  const MAG = { smg: [30, 1.1], gatling: [90, 2.2], blaster: [15, 1], shotgun: [6, 1.5], sniper: [5, 1.8], plasmarifle: [20, 1.4], rocket: [3, 1.8], plasmacannon: [4, 2.1], acidgun: [40, 1.6], flamethrower: [40, 1.6], freezeray: [40, 1.6] };
+  const SHELL = { smg: '#e6b54a', gatling: '#e6b54a', sniper: '#e6b54a', shotgun: '#d64545', blaster: null, plasmarifle: null };
   const MELEE_POSE = { knuckles: 'kick', claw: 'dual', venomclaw: 'dual', scythe: 'spear', hammer: 'spear', sickle: 'spear' };
 
   /* Кэш эмодзи как картинок — быстрее, чем fillText каждый кадр */
@@ -213,12 +245,17 @@
   function decoFor(li) { // детерминированные украшения локации
     let seed = 1234 + li * 977; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const out = [], L = LOCS[li];
-    for (let k = 0; k < 340; k++) {
+    for (let k = 0; k < (li === 0 ? 420 : 340); k++) {
       const x = 30 + rnd() * (WW - 60), y = 30 + rnd() * (WH - 60);
       if (Math.hypot(x - CAMP.x, y - CAMP.y) < CAMP.r + 60 || Math.hypot(x - L.portal.x, y - L.portal.y) < 110) continue;
-      out.push({ x, y, e: L.deco[Math.floor(rnd() * L.deco.length)], s: 22 + Math.floor(rnd() * 3) * 6 });
+      if (li === 0) { // спрайты из листа ассетов
+        let r = rnd() * GROVE_W, g = GROVE[0];
+        for (const it of GROVE) { r -= it[2]; if (r <= 0) { g = it; break; } }
+        out.push({ x, y, spr: g[0], w: g[1] * (.85 + rnd() * .3), tall: !!g[3], flip: rnd() < .5 });
+      } else if (rnd() < .12) out.push({ x, y, spr: rnd() < .6 ? 'rock-small' : 'rock', w: 40 + rnd() * 30, tall: false, flip: rnd() < .5 });
+      else out.push({ x, y, e: L.deco[Math.floor(rnd() * L.deco.length)], s: 22 + Math.floor(rnd() * 3) * 6 });
     }
-    return out;
+    return out.sort((a, b) => a.y - b.y);
   }
   const segDist = (px, py, ax, ay, bx, by) => { const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1; let t = ((px - ax) * dx + (py - ay) * dy) / l2; t = Math.max(0, Math.min(1, t)); return Math.hypot(px - ax - t * dx, py - ay - t * dy); };
   const angDiff = (a, b) => { let d = Math.abs(a - b) % 6.2832; return d > Math.PI ? 6.2832 - d : d; };
@@ -258,7 +295,36 @@
     let enemies = [], bubbles = [], drops = [], shots = [], ebul = [], rains = [], pools = [], fx = [], slashes = [], waves = [], bolts = [], cones = [], beam = null, boss = null;
     let quest = null, combo = 0, hintShown = false, roundWrong = false, stop = false, raf = 0, last = performance.now(), reveal = null;
     let spawnT = 0, saveT = 0, hudT = 0, shake = 0, hurtSfxT = 0, lastLvl = heroLvl(v), spinA = 0;
-    const wt = {}, petT = [];
+    const wt = {}, petT = [], ammo = {}, rlT = {}, firedT = {};
+    const rlTime = id => MAG[id][1] / (1 + .12 * v.ups.reload);
+    function startReload(id) {
+      if (!MAG[id] || rlT[id] > 0) return;
+      rlT[id] = rlTime(id);
+      const hw = heldWeapon();
+      if (hw && hw.id === id) { // выпавший магазин
+        fx.push({ type: 'mag', x: P.x + P.face * 10, y: P.y - 40, vx: -P.face * 60, vy: -120, rot: 0, t: 0, life: .7, col: SHELL[id] === undefined ? '#6b5a8f' : '#555' });
+        if (v.sound) ui.sfx('click');
+      }
+    }
+    function useAmmo(id) {
+      firedT[id] = performance.now();
+      if (!MAG[id]) return;
+      ammo[id] = (ammo[id] == null ? MAG[id][0] : ammo[id]) - 1;
+      if (ammo[id] <= 0) startReload(id);
+      const hw = heldWeapon();
+      if (hw && hw.id === id) {
+        P.flashT = .07;
+        const col = SHELL[id];
+        if (col) { const a = P.aim + (Math.cos(P.aim) >= 0 ? -1.6 : 1.6); fx.push({ type: 'shell', x: P.x + Math.cos(P.aim) * 16, y: P.y - 42, vx: Math.cos(a) * 90 + (Math.random() - .5) * 30, vy: -140 - Math.random() * 60, rot: Math.random() * 6, vr: (Math.random() - .5) * 30, gy: P.y + 4, t: 0, life: .9, col }); }
+      }
+    }
+    const onReloadKey = ev => {
+      if (ev.code !== 'KeyR' || /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName)) return;
+      let any = false;
+      for (const id of v.eq) if (MAG[id] && !(rlT[id] > 0) && (ammo[id] == null ? MAG[id][0] : ammo[id]) < MAG[id][0]) { startReload(id); any = true; }
+      if (any) floatText(P.x, P.y - 110, 'Перезарядка', '#ffc23d');
+    };
+    window.addEventListener('keydown', onReloadKey);
     const session = { right: 0, wrong: 0 };
     const queue = makeQueue(pool0, e => accOf(e) * 5);
     const ctl = controls(canvas);
@@ -269,16 +335,23 @@
     };
     window.addEventListener('keydown', onDashKey);
     // касание кнопки рывка и слотов оружия на холсте (раньше, чем «джойстик»)
-    const dashBtn = () => ({ x: 50, y: VH - (boss && narrow ? 100 : 56), r: 32 });
-    const slotsTop = () => (narrow ? 140 : 62);
+    const dashBtn = () => ({ x: 52, y: VH - (boss && narrow ? 104 : 60), r: 34 });
+    const slotsTop = () => (narrow ? 148 : 68);
+    let mmZoom = 1;
+    const miniRect = () => { const mw = narrow ? 128 : 160, mh = mw * WH / WW, mx = VW - mw - 14, my = VH - mh - 12; return { mx, my, mw, mh, zin: { x: mx + mw - 24, y: my + mh - 50, w: 22, h: 22 }, zout: { x: mx + mw - 24, y: my + mh - 25, w: 22, h: 22 } }; };
+    const inRect = (x, y, b) => x >= b.x - 4 && x <= b.x + b.w + 4 && y >= b.y - 4 && y <= b.y + b.h + 4;
     area.addEventListener('pointerdown', ev => {
       if (ev.target !== canvas) return;
       const r = canvas.getBoundingClientRect(), x = (ev.clientX - r.left) * VW / r.width, y = (ev.clientY - r.top) * VH / r.height;
       const db = dashBtn(), iy0 = slotsTop(), n = v.eq.length + (shieldOf(v) ? 1 : 0);
+      const mm = miniRect();
       if (Math.hypot(x - db.x, y - db.y) < db.r + 8) { ev.stopPropagation(); ev.preventDefault(); dash(); }
+      else if (qBtn.r && Math.hypot(x - qBtn.x, y - qBtn.y) < qBtn.r + 10) { ev.stopPropagation(); ev.preventDefault(); if (quest) ui.speak(quest.e.ch); }
+      else if (inRect(x, y, mm.zin)) { ev.stopPropagation(); ev.preventDefault(); mmZoom = Math.min(3, mmZoom + 1); }
+      else if (inRect(x, y, mm.zout)) { ev.stopPropagation(); ev.preventDefault(); mmZoom = Math.max(1, mmZoom - 1); }
       else if (x >= 6 && x <= 52 && y >= iy0 - 3 && y <= iy0 + n * 38) { ev.stopPropagation(); ev.preventDefault(); shop(y >= iy0 + v.eq.length * 38 ? 'shields' : 'arsenal'); }
     }, true);
-    const cleanup = () => { stop = true; cancelAnimationFrame(raf); ctl.destroy(); window.removeEventListener('keydown', onDashKey); v.last = Date.now(); store.save(); };
+    const cleanup = () => { stop = true; cancelAnimationFrame(raf); ctl.destroy(); window.removeEventListener('keydown', onDashKey); window.removeEventListener('keydown', onReloadKey); v.last = Date.now(); store.save(); };
     HZ.router.onLeave(() => { cleanup(); const n = session.right; if (n >= 5) { HZ.gami.addXP(n); HZ.gami.onGame(n, n + session.wrong); } else if (n) HZ.gami.addXP(n); });
 
     const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -553,6 +626,10 @@
       for (const id of v.eq) {
         const d = AR[id], wl = v.wp[id]; if (!d || !wl) continue;
         const s = d.st(wl); wt[id] = (wt[id] || 0) - dt;
+        if (MAG[id]) { // магазин: пока идёт перезарядка — оружие молчит
+          if (rlT[id] > 0) { rlT[id] -= dt; if (rlT[id] > 0) continue; rlT[id] = 0; ammo[id] = MAG[id][0]; }
+          if (ammo[id] == null) ammo[id] = MAG[id][0];
+        }
         const o = { el: d.el, crit: s.crit, stun: s.stun };
         if (d.cls === 'orbit') {
           const rad = s.radius * M.rg;
@@ -583,7 +660,7 @@
           if (!t) { wt[id] = .15; continue; }
           wt[id] = .1; aimAt(t);
           for (const e of enemies) { if (e.dead) continue; const dd = Math.hypot(e.x - P.x, e.y - P.y + 24); if (dd - e.r < rg && angDiff(Math.atan2(e.y - P.y + 24, e.x - P.x), P.aim) < s.ang) hurt(e, s.dmg, Math.cos(P.aim) * 40, Math.sin(P.aim) * 40, Object.assign({ quiet: Math.random() < .7 }, o)); }
-          cones.push({ a: P.aim, rg, ang: s.ang, el: d.el, t: 0 });
+          cones.push({ a: P.aim, rg, ang: s.ang, el: d.el, t: 0 }); useAmmo(id);
           continue;
         }
         if (wt[id] > 0) continue;
@@ -598,6 +675,7 @@
         const t = nearest(P, range);
         if (!t) { wt[id] = .15; continue; }
         wt[id] = s.cd * M.cd;
+        if (!MAG[id]) firedT[id] = performance.now();
         if (d.cls === 'melee') {
           aimAt(t, true, id);
           const rg = s.range * M.rg;
@@ -616,10 +694,12 @@
             shots.push({ kind: s.arrow ? 'arrow' : 'bullet', x: P.x + Math.cos(a0) * 26, y: P.y - 30 + Math.sin(a0) * 26, vx: Math.cos(a) * s.speed, vy: Math.sin(a) * s.speed, dmg: s.dmg, life: range / s.speed + .05, pierce: s.pierce || 0, hit: new Set(), o, col: s.col, w: s.w || 3, trail: s.trail });
           }
           if (s.flash || n > 2) waves.push({ x: P.x + Math.cos(a0) * 34, y: P.y - 10 + Math.sin(a0) * 34, max: 22, t: 0, col: '255,210,80' });
+          useAmmo(id);
         } else if (d.cls === 'rocket') {
           aimAt(t);
           const a = Math.atan2(t.y - P.y, t.x - P.x);
           shots.push({ kind: 'rocket', x: P.x, y: P.y - 34, vx: Math.cos(a) * 380, vy: Math.sin(a) * 380, dmg: s.dmg, blast: s.blast * M.rg, life: 2.2, target: t, o, plasma: s.plasma });
+          useAmmo(id);
         } else if (d.cls === 'boomerang') {
           aimAt(t);
           const a = Math.atan2(t.y - P.y + 24, t.x - P.x);
@@ -816,7 +896,12 @@
       }
       bubbles.forEach(b => { if (b.dead) b.dead += dt * 2; if (b.pop) b.pop += dt * 2; });
       bubbles = bubbles.filter(b => b.dead < 1 && b.pop < 1.2);
-      fx.forEach(f => { f.t += dt; if (f.type === 'dot') { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 260 * dt; } });
+      fx.forEach(f => {
+        f.t += dt;
+        if (f.type === 'dot') { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 260 * dt; }
+        else if (f.type === 'shell' || f.type === 'mag') { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 700 * dt; f.rot += (f.vr || 8) * dt; const gy = f.gy || P.y + 4; if (f.y > gy && f.vy > 0) { f.y = gy; f.vy *= -.35; f.vx *= .5; f.vr = (f.vr || 8) * .5; } }
+      });
+      P.flashT = Math.max(0, (P.flashT || 0) - dt);
       fx = fx.filter(f => f.t < (f.life || (f.type === 'num' ? .6 : f.type === 'dust' ? .5 : 1)));
       slashes.forEach(s => { s.t += dt; }); slashes = slashes.filter(s => s.t < .22);
       waves.forEach(w => { w.t += dt; }); waves = waves.filter(w => w.t < .45);
@@ -923,18 +1008,24 @@
     function drawQuest(now) {
       if (!quest) return;
       const e = quest.e, show = v.mode !== 'hard';
-      const w = narrow ? VW - 20 : 460, x0 = (VW - w) / 2, y0 = narrow ? 62 : 8, hh = 70;
-      ctx.fillStyle = 'rgba(255,253,246,.95)'; ctx.strokeStyle = quest.done ? '#1f9d63' : '#c9a35b'; ctx.lineWidth = 3;
-      rr(ctx, x0, y0, w, hh, 14); ctx.fill(); ctx.stroke();
+      const w = narrow ? VW - 20 : 470, x0 = (VW - w) / 2, y0 = narrow ? 62 : 8, hh = 78;
+      const qi = SCN('quest');
+      if (SCN_OK(qi)) { if (quest.done) { ctx.shadowColor = '#1f9d63'; ctx.shadowBlur = 18; } ctx.drawImage(qi, x0, y0, w, hh); ctx.shadowBlur = 0; }
+      else { ctx.fillStyle = 'rgba(255,253,246,.95)'; ctx.strokeStyle = quest.done ? '#1f9d63' : '#c9a35b'; ctx.lineWidth = 3; rr(ctx, x0, y0, w, hh, 14); ctx.fill(); ctx.stroke(); }
       ctx.textBaseline = 'middle';
+      qBtn.r = 0;
       if (show) {
-        const ch = e.ch, fs = ch.length > 2 ? 26 : ch.length === 2 ? 34 : 44, bw = Math.max(70, fs * ch.length + 20);
-        ctx.fillStyle = '#fbf0d3'; rr(ctx, x0 + 8, y0 + 8, bw, hh - 16, 10); ctx.fill();
-        ctx.fillStyle = '#2a2018'; ctx.font = `700 ${fs}px "Noto Serif SC","Songti SC",serif`; ctx.textAlign = 'center'; ctx.fillText(ch, x0 + 8 + bw / 2, y0 + hh / 2 + 2);
-        const tx = x0 + bw + 18, tw = w - bw - 30;
-        ctx.textAlign = 'left'; ctx.fillStyle = '#7a726a'; ctx.font = '600 12px system-ui, sans-serif'; ctx.fillText(quest.done ? '✓ Найдено!' : 'Найди этот знак на карте:', tx, y0 + 16);
-        drawPy(e.py, tx + Math.min(tw, 400) / 2, y0 + 37, 17);
-        ctx.textAlign = 'left'; ctx.fillStyle = '#231f1c'; ctx.font = '600 14px system-ui, sans-serif'; ctx.fillText(fit(firstGloss(e.m), tw), tx, y0 + 57);
+        const ch = e.ch, fs = ch.length > 2 ? 28 : ch.length === 2 ? 38 : 48, bw = Math.max(78, fs * ch.length + 14);
+        ctx.fillStyle = '#231a12'; ctx.font = `700 ${fs}px "Noto Serif SC","Songti SC",serif`; ctx.textAlign = 'center'; ctx.fillText(ch, x0 + 14 + bw / 2, y0 + hh / 2 + 2);
+        const tx = x0 + bw + 26, tw = w - bw - 50;
+        ctx.textAlign = 'left'; ctx.fillStyle = '#7a6a58'; ctx.font = '600 12px system-ui, sans-serif'; ctx.fillText(quest.done ? '✓ Найдено!' : 'Найди этот знак на карте:', tx, y0 + 17);
+        const pyx = tx + Math.min(tw, 320) / 2; drawPy(e.py, pyx, y0 + 40, 19);
+        ctx.font = '700 19px system-ui, sans-serif'; const pw = ctx.measureText(e.py).width;
+        qBtn.x = Math.min(x0 + w - 70, pyx + pw / 2 + 22); qBtn.y = y0 + 40; qBtn.r = 12;
+        ctx.fillStyle = '#2f8fe0'; ctx.beginPath(); ctx.arc(qBtn.x, qBtn.y, qBtn.r, 0, 6.283); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(qBtn.x - 6, qBtn.y - 3); ctx.lineTo(qBtn.x - 3, qBtn.y - 3); ctx.lineTo(qBtn.x + 1, qBtn.y - 7); ctx.lineTo(qBtn.x + 1, qBtn.y + 7); ctx.lineTo(qBtn.x - 3, qBtn.y + 3); ctx.lineTo(qBtn.x - 6, qBtn.y + 3); ctx.closePath(); ctx.fill();
+        ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(qBtn.x + 2, qBtn.y, 5, -.9, .9); ctx.stroke();
+        ctx.textAlign = 'left'; ctx.fillStyle = '#231f1c'; ctx.font = '600 14px system-ui, sans-serif'; ctx.fillText(fit(firstGloss(e.m), tw), tx, y0 + 62);
       } else {
         ctx.textAlign = 'center'; ctx.fillStyle = '#7a726a'; ctx.font = '600 12px system-ui, sans-serif';
         ctx.fillText(quest.done ? '✓ Найдено!' : quest.type === 'm' ? 'Найди знак со значением:' : 'Найди знак с чтением:', VW / 2, y0 + 14);
@@ -943,17 +1034,31 @@
         if (hintShown) { if (quest.type === 'm') drawPy(e.py, VW / 2, y0 + 58, 14); else { ctx.fillStyle = '#7a726a'; ctx.font = '600 13px system-ui, sans-serif'; ctx.fillText(fit(firstGloss(e.m), w - 20), VW / 2, y0 + 58); } }
         else { ctx.fillStyle = '#a39d95'; ctx.font = '12px system-ui, sans-serif'; ctx.fillText(`подсказка через ${Math.max(0, Math.ceil(Math.max(1.5, 9 - 1.2 * v.ups.wisdom) - (now - quest.t0) / 1000))} с · награда ×2`, VW / 2, y0 + 58); }
       }
-      ctx.textAlign = 'right'; ctx.font = '700 12px system-ui, sans-serif'; ctx.fillStyle = seals() >= SEALS ? '#7a4dc9' : '#7a726a';
-      ctx.fillText(boss ? '⚔️ босс' : `🌀 ${seals()}/${SEALS}`, x0 + w - 10, y0 + 14);
+      ctx.textAlign = 'right'; ctx.font = '800 14px system-ui, sans-serif'; ctx.fillStyle = seals() >= SEALS || boss ? '#6a35c9' : '#7a6a58';
+      ctx.fillText(boss ? '⚔️ босс' : `${seals()}/${SEALS}`, x0 + w - 16, y0 + 18);
+      if (!boss) { const pi = SCN('portal'); if (SCN_OK(pi)) ctx.drawImage(pi, x0 + w - 16 - ctx.measureText(`${seals()}/${SEALS}`).width - 22, y0 + 8, 19, 19); }
       if (reveal && now - reveal.t < 3500) {
         const msg = `«${reveal.e.ch}» — ${reveal.e.py} — ${firstGloss(reveal.e.m)}`;
         ctx.font = '700 14px system-ui, sans-serif'; ctx.textAlign = 'center';
         const mw2 = Math.min(w, ctx.measureText(msg).width + 24);
-        ctx.fillStyle = 'rgba(214,69,69,.92)'; rr(ctx, VW / 2 - mw2 / 2, y0 + hh + 6, mw2, 26, 10); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.fillText(fit(msg, mw2 - 16), VW / 2, y0 + hh + 19);
+        ctx.fillStyle = 'rgba(214,69,69,.92)'; rr(ctx, VW / 2 - mw2 / 2, y0 + hh + 4, mw2, 26, 10); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.fillText(fit(msg, mw2 - 16), VW / 2, y0 + hh + 17);
       }
       ctx.textAlign = 'center';
     }
+    function drawDeco(d, ox, oy, alpha) {
+      const x = d.x - ox, y = d.y - oy;
+      if (d.spr) {
+        const im = SCN(d.spr); if (!SCN_OK(im)) return;
+        const w = d.w, hh = w * im.naturalHeight / im.naturalWidth;
+        if (x < -w || x > VW + w || y < -10 || y - hh > VH + 10) return;
+        const sway = d.spr === 'bamboo' || d.spr === 'bamboo2' ? Math.sin(performance.now() / 900 + d.x) * .025 : 0;
+        ctx.save(); if (alpha < 1) ctx.globalAlpha = alpha; ctx.translate(x, y); if (sway) ctx.rotate(sway); if (d.flip) ctx.scale(-1, 1);
+        if (v.loc && d.spr.startsWith('rock')) ctx.drawImage(im, -w / 2, -hh, w, hh); else ctx.drawImage(im, -w / 2, -hh, w, hh);
+        ctx.restore();
+      } else { if (x < -40 || y < -40 || x > VW + 40 || y > VH + 40) return; const im = emo(d.e, d.s); ctx.drawImage(im, x - im.width / 2, y - im.height / 2); }
+    }
+    const qBtn = { x: 0, y: 0, r: 0 }, frontDeco = []; // кнопка озвучки в карточке задания
     /** Картинка оружия: спрайт из листа или эмодзи */
     function wImg(d, size) { if (d.img) { const im = SPR(d.img); return im.complete && im.naturalWidth ? im : null; } return emo(d.ico, size); }
     function drawSpr(im, x, y, size, rot) {
@@ -1010,7 +1115,7 @@
         ctx.scale(P.face * k * pop, k * pop);
         if (ok(im)) ctx.drawImage(T(im), -m.ax, -m.ay, m.w, m.h);
       } else {
-        const up = P.up && P.moving, nm = up ? 'back' : 'idle', m = NJ[nm];
+        const up = false, nm = 'idle', m = NJ[nm]; // всегда лицом к игроку
         const top = NIMG(nm + '-top'), lg = NIMG(nm + '-legl'), rg = NIMG(nm + '-legr');
         const A = walking ? .17 : 0, s1 = Math.sin(ph), c1 = Math.cos(ph);
         const bob = walking ? -Math.abs(s1) * 5 : 0, br = walking ? 0 : Math.sin(now / 520) * .022;
@@ -1064,30 +1169,54 @@
       const melee = d.cls === 'melee' || (d.cat === 'magic' && d.img);
       let a = P.aim;
       if (melee && P.swingT > 0) a += (P.swingT / .25 - .5) * -2.4 * (Math.cos(P.aim) >= 0 ? 1 : -1);
-      const rec = P.recoilT > 0 ? P.recoilT / .1 * 9 : 0;
-      const hx = sx + Math.cos(P.aim) * (18 - rec), hy = sy - hh0 + Math.sin(P.aim) * 10;
+      const rec = P.recoilT > 0 ? P.recoilT / .1 * 9 : 0, now = performance.now();
+      const reloading = MAG[d.id] && rlT[d.id] > 0, rp = reloading ? 1 - rlT[d.id] / rlTime(d.id) : 0;
+      const bob = P.moving ? Math.sin(P.walk * 2) * 2.2 : Math.sin(now / 480) * 1.2;
+      if (reloading) a += Math.sin(rp * Math.PI) * 1.1 * (Math.cos(P.aim) >= 0 ? 1 : -1); // наклон вниз и обратно при смене магазина
+      const hx = sx + Math.cos(P.aim) * (18 - rec), hy = sy - hh0 + Math.sin(P.aim) * 10 + bob + (reloading ? Math.sin(rp * Math.PI) * 6 : 0);
       ctx.save(); ctx.translate(hx, hy); ctx.rotate(a);
       if (Math.cos(a) < 0) ctx.scale(1, -1);
       if (melee) ctx.rotate(Math.PI / 2 - .2);
       const size = melee ? 54 : d.cls === 'grenade' || d.cls === 'throw' || d.cls === 'boomerang' ? 30 : 58;
       const k = size / Math.max(im.naturalWidth || im.width, im.naturalHeight || im.height), w = (im.naturalWidth || im.width) * k, hh = (im.naturalHeight || im.height) * k;
+      if (d.el) { ctx.shadowColor = ELEM[d.el].col; ctx.shadowBlur = 10 + 5 * Math.sin(now / 180); }
       if (melee) ctx.drawImage(im, -w / 2, -hh * .85, w, hh); else ctx.drawImage(im, -w * .25, -hh / 2, w, hh);
+      ctx.shadowBlur = 0;
+      if (!melee && P.flashT > 0 && !reloading) { // вспышка выстрела у дула
+        const fx0 = w * .78, r0 = 9 + Math.random() * 6, col = d.el ? ELEM[d.el].col : AR[d.id].st(1).col || '#ffd34d';
+        ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = col; ctx.beginPath();
+        for (let i = 0; i < 10; i++) { const rr0 = i % 2 ? r0 * .45 : r0, an = i / 10 * 6.283; ctx.lineTo(fx0 + Math.cos(an) * rr0 * 1.4, Math.sin(an) * rr0); }
+        ctx.closePath(); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(fx0, 0, r0 * .35, 0, 6.283); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+      }
+      if (d.cat === 'magic' && Math.random() < .25) fx.push({ type: 'dot', x: P.x + Math.cos(P.aim) * 30 + (Math.random() - .5) * 14, y: P.y - hh0 - 26 + (Math.random() - .5) * 14, vx: 0, vy: -50, t: .4, color: d.el ? ELEM[d.el].col : '#ffe07a' });
       ctx.restore();
+      if (reloading) { // полоска перезарядки над героем
+        const bx = sx - 26, by = sy - 112;
+        ctx.fillStyle = 'rgba(0,0,0,.55)'; rr(ctx, bx - 2, by - 2, 56, 10, 5); ctx.fill();
+        ctx.fillStyle = '#ffc23d'; rr(ctx, bx, by, 52 * rp, 6, 3); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = '800 10px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('перезарядка', sx, by - 8);
+      }
     }
 
     function draw(now) {
       const ox = cam.x + (shake ? (Math.random() - .5) * 40 * shake : 0), oy = cam.y + (shake ? (Math.random() - .5) * 40 * shake : 0);
       ctx.clearRect(0, 0, VW, VH);
-      // земля
-      const T = 64, i0 = Math.floor(ox / T), j0 = Math.floor(oy / T);
-      for (let i = i0; i <= i0 + Math.ceil(VW / T) + 1; i++) for (let j = j0; j <= j0 + Math.ceil(VH / T) + 1; j++) {
-        ctx.fillStyle = L.g[((i * 7 + j * 13) % 3 + 3) % 3 === 0 ? 2 : (i + j) % 2]; ctx.fillRect(i * T - ox, j * T - oy, T + 1, T + 1);
+      // земля: травяные плитки из листа ассетов (в других локациях — окрашенные)
+      const T = 64, D = Math.round(T * 1.22), off = (D - T) / 2, i0 = Math.floor(ox / T), j0 = Math.floor(oy / T), tpx = Math.round(D * (canvas._dpr || 1));
+      ctx.fillStyle = L.g[0]; ctx.fillRect(0, 0, VW, VH);
+      for (let j = j0 - 1; j <= j0 + Math.ceil(VH / T) + 1; j++) for (let i = i0 - 1; i <= i0 + Math.ceil(VW / T) + 1; i++) {
+        const hsh = (((i * 73856093) ^ (j * 19349663)) >>> 0) % 97, name = TILES[hsh % TILES.length];
+        const tc = sceneCanvas(v.loc, name, tpx, tpx);
+        if (tc) ctx.drawImage(tc, i * T - ox - off, j * T - oy - off, D, D);
+        else { ctx.fillStyle = L.g[(i + j) & 1]; ctx.fillRect(i * T - ox, j * T - oy, T + 1, T + 1); }
       }
       // лагерь
       const cx = CAMP.x - ox, cy = CAMP.y - oy;
       ctx.fillStyle = 'rgba(255,236,190,.45)'; ctx.beginPath(); ctx.arc(cx, cy, CAMP.r, 0, 6.283); ctx.fill();
       ctx.setLineDash([10, 8]); ctx.strokeStyle = 'rgba(160,110,40,.6)'; ctx.lineWidth = 3; ctx.stroke(); ctx.setLineDash([]);
       ctx.drawImage(emo('🏕️', 46), cx - 70, cy - 60); ctx.drawImage(emo('🔥', 30 + Math.round(Math.sin(now / 120) * 2)), cx + 10, cy - 10);
+      for (const [lx, ly] of [[-110, 30], [96, 34]]) { const li = SCN('lantern'); if (SCN_OK(li)) ctx.drawImage(li, cx + lx - 22, cy + ly - 62, 44, 61); ctx.fillStyle = `rgba(255,200,90,${.18 + .06 * Math.sin(now / 200 + lx)})`; ctx.beginPath(); ctx.arc(cx + lx, cy + ly - 36, 26, 0, 6.283); ctx.fill(); }
+      { const pl = SCN('paperlantern'); if (SCN_OK(pl)) for (const [lx, ly, ph] of [[-40, -78, 0], [36, -84, 1.3]]) { ctx.save(); ctx.translate(cx + lx, cy + ly); ctx.rotate(Math.sin(now / 500 + ph) * .12); ctx.drawImage(pl, -8, 0, 16, 23); ctx.restore(); } }
       // портал босса
       const px = L.portal.x - ox, py = L.portal.y - oy, open = seals() >= SEALS && !boss;
       ctx.save(); ctx.translate(px, py);
@@ -1099,7 +1228,7 @@
       ctx.fillText(boss ? 'Бой идёт!' : open ? 'Войдите — босс!' : `🔒 ${seals()}/${SEALS} печатей`, 0, 76);
       ctx.restore();
       // украшения
-      for (const d of deco) { const x = d.x - ox, y = d.y - oy; if (x < -40 || y < -40 || x > VW + 40 || y > VH + 40) continue; const im = emo(d.e, d.s); ctx.drawImage(im, x - im.width / 2, y - im.height / 2); }
+      for (const d of deco) { if (d.tall && d.y > P.y) continue; drawDeco(d, ox, oy, 1); }
       ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 6; ctx.strokeRect(-ox, -oy, WW, WH);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       // лужи кислоты и лавы, огненный дождь
@@ -1116,12 +1245,14 @@
         if (sx < -60 || sy < -60 || sx > VW + 60 || sy > VH + 60) continue;
         const bob = Math.sin(now / 400 + b.ph) * 4, a = b.dead ? Math.max(0, 1 - b.dead) : b.pop ? Math.max(0, 1 - b.pop) : 1, sc = b.pop ? 1 + b.pop * .5 : 1;
         ctx.save(); ctx.globalAlpha = a; ctx.translate(sx, sy + bob); ctx.scale(sc, sc);
-        ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(0, b.r + 6, b.r * .8, 8, 0, 0, 6.283); ctx.fill();
+        const lb = b.e.ch, wide = lb.length > 1, cw = wide ? b.r * (lb.length > 2 ? 3.4 : 2.9) : b.r * 2.1, chh = b.r * 2.05, card = SCN(wide ? 'cardw' : 'card');
+        ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(0, chh / 2 + 8 - bob, cw * .42, 9, 0, 0, 6.283); ctx.fill();
         if (b.ok && glow && v.mode === 'hard' && !b.pop) { ctx.shadowColor = '#ffd34d'; ctx.shadowBlur = 26; }
-        ctx.fillStyle = b.dead ? '#f6c7c7' : '#fffdf6'; ctx.strokeStyle = b.dead ? '#d64545' : '#c9a35b'; ctx.lineWidth = 3;
-        rr(ctx, -b.r, -b.r + 4, b.r * 2, b.r * 2 - 8, 16); ctx.fill(); ctx.shadowBlur = 0; ctx.stroke();
-        const lb = b.e.ch; ctx.fillStyle = '#2a2018'; ctx.font = `700 ${lb.length > 2 ? 22 : lb.length === 2 ? 30 : 38}px "Noto Serif SC","Songti SC",serif`;
-        ctx.fillText(lb, 0, 2);
+        if (SCN_OK(card)) ctx.drawImage(b.dead ? tinted(card, 'rgba(220,60,60,.45)') : card, -cw / 2, -chh / 2, cw, chh);
+        else { ctx.fillStyle = b.dead ? '#f6c7c7' : '#fffdf6'; ctx.strokeStyle = b.dead ? '#d64545' : '#c9a35b'; ctx.lineWidth = 3; rr(ctx, -cw / 2, -chh / 2, cw, chh, 16); ctx.fill(); ctx.stroke(); }
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#2a2018'; ctx.font = `700 ${lb.length > 2 ? 24 : lb.length === 2 ? 31 : 40}px "Noto Serif SC","Songti SC",serif`;
+        ctx.fillText(lb, 0, 3);
         ctx.restore();
       }
       // кляксы и босс
@@ -1185,11 +1316,19 @@
           ctx.save(); ctx.translate(p.x - ox, p.y - oy - hop); ctx.scale(1 + sq, 1 - sq); ctx.drawImage(im, -ww / 2, -hh + 6, ww, hh); ctx.restore();
         }
       });
+      // высокий декор перед героем: прозрачный, если закрывает героя или знак
+      for (const d of deco) {
+        if (!d.tall || d.y <= P.y) continue;
+        const near = Math.abs(d.x - P.x) < d.w * .5 + 20 && d.y - P.y < d.w * 1.3 || bubbles.some(b => !b.dead && Math.abs(d.x - b.x) < d.w * .5 + 30 && d.y > b.y && d.y - b.y < d.w * 1.3);
+        frontDeco.push([d, near ? .5 : 1]);
+      }
       for (const f of fx) if (f.type === 'ghost' && v.skin === 'ninja') {
         const m = NJ.dash, im = NIMG('dash'), k = NINJA_K; if (!im.complete || !im.naturalWidth) continue;
         ctx.save(); ctx.globalAlpha = .38 * (1 - f.t / f.life); ctx.translate(f.x - ox, f.y - oy); ctx.scale(f.face * k, k); ctx.drawImage(tinted(im, 'rgba(255,60,40,.5)'), -m.ax, -m.ay, m.w, m.h); ctx.restore();
       }
       drawHero(now, ox, oy, lv);
+      for (const [d, a] of frontDeco) drawDeco(d, ox, oy, a);
+      frontDeco.length = 0;
       // предметы, вращающиеся вокруг героя
       for (const id of v.eq) {
         const d = AR[id]; if (!d || d.cls !== 'orbit' || !v.wp[id]) continue;
@@ -1207,8 +1346,9 @@
         if (d > 120) {
           const nj = v.skin === 'ninja', ar = nj ? 86 : 70, ax = P.x - ox + Math.cos(a) * ar, ay = P.y - oy - (nj ? 46 : 30) + Math.sin(a) * ar, pul = 1 + Math.sin(now / 150) * .12;
           ctx.save(); ctx.translate(ax, ay); ctx.rotate(a); ctx.scale(pul, pul);
-          ctx.fillStyle = '#f2b53a'; ctx.strokeStyle = '#7a4a00'; ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-8, -11); ctx.lineTo(-3, 0); ctx.lineTo(-8, 11); ctx.closePath(); ctx.fill(); ctx.stroke();
+          const ai = SCN('arrow');
+          if (SCN_OK(ai)) { ctx.rotate(Math.PI); ctx.drawImage(ai, -16, -17, 31, 34); }
+          else { ctx.fillStyle = '#f2b53a'; ctx.strokeStyle = '#7a4a00'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-8, -11); ctx.lineTo(-3, 0); ctx.lineTo(-8, 11); ctx.closePath(); ctx.fill(); ctx.stroke(); }
           ctx.restore();
         }
       }
@@ -1216,6 +1356,7 @@
       for (const f of fx) {
         if (f.type === 'dust' || f.type === 'ghost') continue;
         const sx = f.x - ox, sy = f.y - oy;
+        if (f.type === 'shell' || f.type === 'mag') { ctx.save(); ctx.globalAlpha = Math.min(1, 2 * (1 - f.t / f.life)); ctx.translate(sx, sy); ctx.rotate(f.rot); ctx.fillStyle = f.col; if (f.type === 'shell') ctx.fillRect(-3, -1.5, 6, 3); else { ctx.fillRect(-3, -6, 6, 12); ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(-3, -6, 2, 12); } ctx.restore(); continue; }
         if (f.type === 'txt') { ctx.globalAlpha = Math.max(0, 1 - f.t / (f.life || 1)); ctx.fillStyle = f.color; ctx.font = '700 20px system-ui, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.strokeText(f.text, sx, sy - f.t * 40); ctx.fillText(f.text, sx, sy - f.t * 40); }
         else if (f.type === 'num') { ctx.globalAlpha = 1 - f.t / .6; ctx.fillStyle = f.crit ? '#ffd34d' : f.col || '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 3; ctx.font = `700 ${f.crit ? 18 : 14}px system-ui, sans-serif`; ctx.strokeText(f.text, sx, sy - f.t * 50); ctx.fillText(f.text, sx, sy - f.t * 50); }
         else { ctx.globalAlpha = Math.max(0, 1 - f.t); ctx.fillStyle = f.color; ctx.fillRect(sx, sy, 5, 5); }
@@ -1233,37 +1374,53 @@
         ctx.fillStyle = '#2a2018'; ctx.font = font; ctx.fillText(label, ix, iy + 1);
       };
       for (const b of bubbles) if (!b.dead && !b.pop) edge(b.x, b.y, b.e.ch.slice(0, 3), b.ok && v.mode !== 'hard' ? 'rgba(255,224,130,.97)' : 'rgba(255,253,246,.92)', `700 ${b.e.ch.length > 1 ? 11 : 16}px "Noto Serif SC",serif`);
-      if (seals() >= SEALS && !boss) edge(L.portal.x, L.portal.y, '🌀', 'rgba(200,170,255,.95)', '16px serif');
+      if (seals() >= SEALS && !boss) {
+        edge(L.portal.x, L.portal.y, '', 'rgba(200,170,255,.95)', '16px serif');
+        const sx = L.portal.x - ox, sy = L.portal.y - oy, pi = SCN('portal');
+        if (!(sx > 0 && sy > 0 && sx < VW && sy < VH) && SCN_OK(pi)) { const dx = sx - VW / 2, dy = sy - VH / 2, k = Math.min((VW / 2 - 28) / Math.abs(dx || 1e-6), (VH / 2 - 28) / Math.abs(dy || 1e-6)); ctx.save(); ctx.translate(VW / 2 + dx * k, VH / 2 + dy * k); ctx.rotate(now / 600); ctx.drawImage(pi, -20, -20, 40, 40); ctx.restore(); }
+      }
       if (boss) edge(boss.x, boss.y, boss.B.ch, 'rgba(255,170,170,.95)', '700 16px "Noto Serif SC",serif');
       // полоски здоровья и опыта
       const mhp = maxHp(v), xl = heroLvl(v), xa = xpAt(xl), xb = xpAt(xl + 1);
       ctx.textAlign = 'left';
-      ctx.fillStyle = 'rgba(0,0,0,.45)'; rr(ctx, 10, 10, 214, 44, 10); ctx.fill();
-      ctx.fillStyle = '#5a1f1f'; ctx.fillRect(18, 17, 198, 13); ctx.fillStyle = '#e04b4b'; ctx.fillRect(18, 17, 198 * Math.max(0, v.hp / mhp), 13);
-      ctx.fillStyle = '#2a2a3a'; ctx.fillRect(18, 35, 198, 9); ctx.fillStyle = '#f2b53a'; ctx.fillRect(18, 35, 198 * Math.min(1, (v.xp - xa) / (xb - xa)), 9);
-      ctx.fillStyle = '#fff'; ctx.font = '700 11px system-ui, sans-serif'; ctx.fillText(`❤ ${Math.ceil(v.hp)} / ${mhp}`, 22, 24); ctx.fillText(`Ур. ${xl}`, 22, 40);
+      ctx.fillStyle = 'rgba(38,44,34,.82)'; rr(ctx, 8, 8, 222, 52, 12); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 1.5; ctx.stroke();
+      const bar = (x, y, w, h, k, c1, c2, bg) => {
+        ctx.fillStyle = bg; rr(ctx, x, y, w, h, h / 2); ctx.fill();
+        if (k > 0) { const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, c1); g.addColorStop(1, c2); ctx.fillStyle = g; rr(ctx, x, y, Math.max(h, w * Math.min(1, k)), h, h / 2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.25)'; rr(ctx, x + 3, y + 2, Math.max(0, w * Math.min(1, k) - 6), h * .3, h * .15); ctx.fill(); }
+      };
+      const hpk = Math.max(0, v.hp / mhp), lowHp = hpk < .3 && Math.floor(now / 300) % 2;
+      bar(16, 14, 206, 18, hpk, lowHp ? '#ff8a8a' : '#ff5a5a', '#d62f2f', '#4a1c1c');
+      bar(16, 37, 206, 15, (v.xp - xa) / (xb - xa), '#ffc23d', '#e8920f', '#2a2a22');
+      ctx.fillStyle = '#fff'; ctx.font = '800 12px system-ui, sans-serif'; ctx.fillText(`❤ ${Math.ceil(v.hp)} / ${mhp}`, 24, 24); ctx.font = '800 11px system-ui, sans-serif'; ctx.fillText(`Ур. ${xl}`, 24, 45);
       // слоты оружия с перезарядкой
-      const iy0 = narrow ? 140 : 62;
+      const iy0 = slotsTop();
       v.eq.forEach((id, i) => {
         const d = AR[id]; if (!d) return;
         const s = d.st(v.wp[id] || 1), x = 12, y = iy0 + i * 38;
-        ctx.fillStyle = 'rgba(0,0,0,.45)'; rr(ctx, x, y, 34, 34, 8); ctx.fill();
-        drawSpr(wImg(d, 22), x + 17, y + 17, 26, d.img && (d.cls === 'melee' || d.cat === 'magic') ? .6 : 0);
+        const pulse = firedT[id] ? Math.max(0, 1 - (now - firedT[id]) / 160) : 0, rl = MAG[id] && rlT[id] > 0;
+        ctx.fillStyle = rl ? 'rgba(80,60,0,.6)' : 'rgba(38,44,34,.78)'; rr(ctx, x, y, 34, 34, 8); ctx.fill();
+        drawSpr(wImg(d, 22), x + 17, y + 17, 26 * (1 + pulse * .18), d.img && (d.cls === 'melee' || d.cat === 'magic') ? .6 : 0);
         const cd = s.cd ? s.cd * (1 - .04 * v.ups.rate) : 0, left = Math.max(0, wt[id] || 0);
-        if (cd > .25 && left > 0) { ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.beginPath(); ctx.moveTo(x + 17, y + 17); ctx.arc(x + 17, y + 17, 17, -Math.PI / 2, -Math.PI / 2 + 6.283 * Math.min(1, left / cd)); ctx.closePath(); ctx.fill(); }
+        if (rl) { const k = 1 - rlT[id] / rlTime(id); ctx.strokeStyle = '#ffc23d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x + 17, y + 17, 15, -Math.PI / 2, -Math.PI / 2 + 6.283 * k); ctx.stroke(); }
+        else if (cd > .25 && left > 0) { ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.beginPath(); ctx.moveTo(x + 17, y + 17); ctx.arc(x + 17, y + 17, 17, -Math.PI / 2, -Math.PI / 2 + 6.283 * Math.min(1, left / cd)); ctx.closePath(); ctx.fill(); }
+        if (MAG[id]) { const n = ammo[id] == null ? MAG[id][0] : ammo[id]; ctx.font = '800 10px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)'; const t = rl ? '⟳' : String(n); ctx.strokeText(t, x + 33, y + 31); ctx.fillStyle = rl ? '#ffc23d' : n <= MAG[id][0] * .25 ? '#ff7a7a' : '#fff'; ctx.fillText(t, x + 33, y + 31); ctx.textAlign = 'left'; }
         if (d.el) { ctx.fillStyle = ELEM[d.el].col; ctx.beginPath(); ctx.arc(x + 30, y + 4, 4, 0, 6.283); ctx.fill(); }
       });
       if (sh0()) { const s = sh0(), y = iy0 + v.eq.length * 38; ctx.fillStyle = 'rgba(0,0,0,.45)'; rr(ctx, 12, y, 34, 34, 8); ctx.fill(); drawSpr(SPR(s.id), 29, y + 17, 28); }
-      ctx.textAlign = 'right'; ctx.font = '700 13px system-ui, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.strokeText(`${L.ico} ${L.name}`, VW - 12, narrow ? 22 : VH - 120); ctx.fillStyle = '#fff'; ctx.fillText(`${L.ico} ${L.name}`, VW - 12, narrow ? 22 : VH - 120);
       ctx.textAlign = 'center';
       drawQuest(now);
       { // кнопка рывка с перезарядкой
         const db = dashBtn(), cd = P.dashCd / 1.3;
-        ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.arc(db.x, db.y, db.r, 0, 6.283); ctx.fill();
-        if (cd > 0) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.moveTo(db.x, db.y); ctx.arc(db.x, db.y, db.r, -Math.PI / 2, -Math.PI / 2 + 6.283 * cd); ctx.closePath(); ctx.fill(); }
-        ctx.strokeStyle = cd > 0 ? 'rgba(255,255,255,.35)' : 'rgba(255,214,120,.95)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(db.x, db.y, db.r, 0, 6.283); ctx.stroke();
-        ctx.globalAlpha = cd > 0 ? .55 : 1; const ei = emo('💨', 26); ctx.drawImage(ei, db.x - ei.width / 2, db.y - ei.height / 2 - 4); ctx.globalAlpha = 1;
-        ctx.fillStyle = '#fff'; ctx.font = '700 10px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(narrow ? 'рывок' : 'пробел', db.x, db.y + 20);
+        const g = ctx.createRadialGradient(db.x, db.y - 8, 4, db.x, db.y, db.r + 4); g.addColorStop(0, 'rgba(70,82,60,.92)'); g.addColorStop(1, 'rgba(40,48,34,.92)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(db.x, db.y, db.r, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 3; ctx.stroke();
+        if (cd > 0) { ctx.strokeStyle = '#ffc23d'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(db.x, db.y, db.r - 2, -Math.PI / 2, -Math.PI / 2 + 6.283 * (1 - cd)); ctx.stroke(); }
+        const kr = 13 + (cd > 0 ? 0 : Math.sin(now / 250) * 1.2), kg = ctx.createRadialGradient(db.x - 4, db.y - 8, 2, db.x, db.y - 4, kr);
+        kg.addColorStop(0, '#ffffff'); kg.addColorStop(1, cd > 0 ? '#9aa39a' : '#e8ece6');
+        ctx.fillStyle = kg; ctx.beginPath(); ctx.arc(db.x, db.y - 4, kr, 0, 6.283); ctx.fill();
+        ctx.font = '800 11px system-ui, sans-serif'; ctx.textAlign = 'center'; const lbl = narrow ? 'рывок' : 'пробел', lw = ctx.measureText(lbl).width + 16;
+        ctx.fillStyle = 'rgba(30,34,28,.95)'; rr(ctx, db.x - lw / 2, db.y + db.r - 12, lw, 18, 9); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.fillText(lbl, db.x, db.y + db.r - 2);
       }
       if (boss) {
         const bw = narrow ? VW - 170 : VW * .5, bx0 = narrow ? 12 : (VW - bw) / 2 - 60, by0 = VH - 40;
@@ -1273,14 +1430,22 @@
         ctx.textAlign = 'right'; ctx.fillText(`${fmt(Math.max(0, boss.hp))} / ${fmt(boss.max)}`, bx0 + bw - 8, by0 + 10); ctx.textAlign = 'center';
       }
       // мини-карта
-      const mw = narrow ? 120 : 150, mh = mw * WH / WW, mx = VW - mw - 10, my = VH - mh - 10, s = mw / WW;
-      ctx.fillStyle = 'rgba(0,0,0,.4)'; rr(ctx, mx - 3, my - 3, mw + 6, mh + 6, 6); ctx.fill();
-      ctx.fillStyle = 'rgba(255,236,190,.7)'; ctx.beginPath(); ctx.arc(mx + CAMP.x * s, my + CAMP.y * s, CAMP.r * s + 1, 0, 6.283); ctx.fill();
-      ctx.fillStyle = seals() >= SEALS || boss ? '#b48cff' : 'rgba(180,180,180,.7)'; ctx.beginPath(); ctx.arc(mx + L.portal.x * s, my + L.portal.y * s, 4, 0, 6.283); ctx.fill();
-      ctx.fillStyle = '#e04b4b'; for (const e of enemies) { const z = e.isBoss ? 7 : e.type === 'king' ? 5 : 3; ctx.fillRect(mx + e.x * s - z / 2, my + e.y * s - z / 2, z, z); }
-      for (const b of bubbles) if (!b.dead && !b.pop) { ctx.fillStyle = b.ok && v.mode !== 'hard' ? '#ffd34d' : '#fff7d6'; ctx.fillRect(mx + b.x * s - 2, my + b.y * s - 2, 4, 4); }
-      ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 1; ctx.strokeRect(mx + cam.x * s, my + cam.y * s, VW * s, VH * s);
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(mx + P.x * s, my + P.y * s, 3, 0, 6.283); ctx.fill();
+      const mm = miniRect(), { mx, my, mw, mh } = mm, z = mmZoom, s = mw / WW * z;
+      const vx0 = Math.max(0, Math.min(WW - WW / z, P.x - WW / z / 2)), vy0 = Math.max(0, Math.min(WH - WH / z, P.y - WH / z / 2));
+      const MX = x => mx + (x - vx0) * s, MY = y => my + (y - vy0) * s;
+      ctx.fillStyle = 'rgba(52,60,44,.9)'; rr(ctx, mx - 8, my - 30, mw + 16, mh + 38, 14); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = `800 ${narrow ? 11 : 12}px system-ui, sans-serif`; ctx.fillText(fit(`${L.ico} ${L.name}`, mw - 4), mx - 1, my - 15); ctx.textAlign = 'center';
+      ctx.save(); rr(ctx, mx, my, mw, mh, 8); ctx.clip();
+      ctx.fillStyle = 'rgba(28,34,24,.75)'; ctx.fillRect(mx, my, mw, mh);
+      ctx.fillStyle = 'rgba(255,236,190,.8)'; ctx.beginPath(); ctx.arc(MX(CAMP.x), MY(CAMP.y), CAMP.r * s + 1, 0, 6.283); ctx.fill();
+      ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(214,69,69,.5)'; ctx.beginPath(); ctx.arc(MX(CAMP.x), MY(CAMP.y), (CAMP.r + 260) * s, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = seals() >= SEALS || boss ? '#b48cff' : 'rgba(180,180,180,.7)'; ctx.beginPath(); ctx.arc(MX(L.portal.x), MY(L.portal.y), 4 + z, 0, 6.283); ctx.fill();
+      ctx.fillStyle = '#e04b4b'; for (const e of enemies) { const q = (e.isBoss ? 7 : e.type === 'king' ? 5 : 3) + (z > 1 ? 1 : 0); ctx.fillRect(MX(e.x) - q / 2, MY(e.y) - q / 2, q, q); }
+      for (const b of bubbles) if (!b.dead && !b.pop) { ctx.fillStyle = b.ok && v.mode !== 'hard' ? '#ffd34d' : '#fff7d6'; ctx.fillRect(MX(b.x) - 2, MY(b.y) - 2, 4 + (z > 1), 4 + (z > 1)); }
+      ctx.strokeStyle = 'rgba(255,255,255,.65)'; ctx.lineWidth = 1; ctx.strokeRect(MX(cam.x), MY(cam.y), VW * s, VH * s);
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(MX(P.x), MY(P.y), 3.5, 0, 6.283); ctx.fill();
+      ctx.restore();
+      for (const [lbl, b] of [['+', mm.zin], ['−', mm.zout]]) { ctx.fillStyle = 'rgba(25,28,22,.9)'; rr(ctx, b.x, b.y, b.w, b.h, 6); ctx.fill(); ctx.fillStyle = (lbl === '+' ? z < 3 : z > 1) ? '#fff' : 'rgba(255,255,255,.35)'; ctx.font = '800 16px system-ui, sans-serif'; ctx.fillText(lbl, b.x + b.w / 2, b.y + b.h / 2 + 1); }
       if (ctl.joy.on) {
         ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ctl.joy.ox, ctl.joy.oy, 46, 0, 6.283); ctx.stroke();
         const jx = ctl.joy.x - ctl.joy.ox, jy = ctl.joy.y - ctl.joy.oy, jd = Math.min(46, Math.hypot(jx, jy)), ja = Math.atan2(jy, jx);
@@ -1425,7 +1590,7 @@
       ui.modal('Выберите героя', h('div.wk-pick', ninja, h('p.muted.small', 'Или существо из «Эволюции» — оно растёт с уровнем: каждые 4 уровня — новая стадия.'), grid), [{ label: 'Закрыть' }]);
     }
 
-    canvas._dbg = () => ({ P, enemies, bubbles, quest, v, drops, cam, boss, ebul, shots, pools, spawn: spawnEnemy, travel, startBoss, newRound });
+    canvas._dbg = () => ({ P, enemies, bubbles, quest, v, drops, cam, boss, ebul, shots, pools, spawn: spawnEnemy, travel, startBoss, newRound, qBtn, ammo, reloading: Object.keys(rlT).some(k => rlT[k] > 0), mini: miniRect, zoom: () => mmZoom });
     newRound(); hud();
     raf = requestAnimationFrame(frame);
     canvas.focus();

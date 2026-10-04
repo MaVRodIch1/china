@@ -4,16 +4,41 @@
   const HZ = window.HZ, ui = HZ.ui, h = ui.h, store = HZ.store;
 
   let leaveFns = [];
+  // корневые разделы (пункты меню) и куда возвращаться, если истории нет
+  const ROOTS = new Set(['home', 'games', 'evo', 'library', 'collections', 'stats']);
+  const PARENT = { char: '#/library', word: '#/words', words: '#/library', texts: '#/library', text: '#/texts', collection: '#/collections', valley: '#/games', settings: '#/', study: '#/' };
+  const stack = [];
+  const routeName = () => (location.hash.replace(/^#\/?/, '') || 'home').split('/')[0] || 'home';
+  const exitBtn = () => document.querySelector('#view .study-head .icon-btn[aria-label="Выйти"]');
+  function track() {
+    const hsh = location.hash || '#/';
+    if (stack.length > 1 && stack[stack.length - 2] === hsh) stack.pop();
+    else if (stack[stack.length - 1] !== hsh) stack.push(hsh);
+    if (stack.length > 60) stack.shift();
+  }
+  function updateBack() {
+    const btn = document.getElementById('back-btn'); if (!btn) return;
+    const show = !ROOTS.has(routeName()) || !!exitBtn();
+    btn.hidden = !show; document.body.classList.toggle('has-back', show);
+  }
   const router = {
+    back() {
+      const ex = exitBtn();
+      if (ex) return ex.click();                 // игра или сессия: выйти в меню
+      if (stack.length > 1) return history.back();
+      location.replace(PARENT[routeName()] || '#/');
+    },
+    updateBack,
     onLeave(fn) { leaveFns.push(fn); },
     go(hash) { if (location.hash === hash) router.render(); else location.hash = hash; },
     render() {
       leaveFns.forEach(f => { try { f(); } catch (e) { /* ignore */ } }); leaveFns = [];
+      track();
       document.getElementById('modal').classList.remove('open');
       const parts = (location.hash.replace(/^#\/?/, '') || 'home').split('/').map(decodeURIComponent);
       const [name, a, b] = parts;
       const v = document.getElementById('view');
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, behavior: 'instant' });
       let nav = name;
       try {
         switch (name) {
@@ -40,6 +65,8 @@
       }
       document.querySelectorAll('[data-nav]').forEach(a2 => a2.classList.toggle('active', a2.dataset.nav === (nav === 'home' ? 'home' : nav)));
       document.body.classList.toggle('focus', name === 'study');
+      v.classList.remove('view-in'); void v.offsetWidth; v.classList.add('view-in'); // плавное появление страницы
+      updateBack();
       HZ.gami.refreshHeader();
     }
   };
@@ -66,6 +93,18 @@
       store.s.settings.theme = cur === 'dark' ? 'light' : 'dark'; store.save(); HZ.applyTheme();
     };
     window.addEventListener('hashchange', router.render);
+    // «Назад»: кнопка в шапке, Esc, свайп от левого края
+    document.getElementById('back-btn').onclick = () => router.back();
+    new MutationObserver(() => { cancelAnimationFrame(router._ub); router._ub = requestAnimationFrame(updateBack); }).observe(document.getElementById('view'), { childList: true, subtree: true });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || e.defaultPrevented || document.getElementById('modal').classList.contains('open')) return;
+      const t = document.activeElement && document.activeElement.tagName;
+      if (/^(INPUT|TEXTAREA|SELECT|CANVAS)$/.test(t) || document.getElementById('back-btn').hidden) return;
+      router.back();
+    });
+    let sw = null;
+    document.addEventListener('touchstart', e => { const t = e.touches[0]; sw = e.touches.length === 1 && t.clientX < 24 && !e.target.closest('canvas') ? { x: t.clientX, y: t.clientY } : null; }, { passive: true });
+    document.addEventListener('touchend', e => { if (!sw) return; const t = e.changedTouches[0], dx = t.clientX - sw.x, dy = Math.abs(t.clientY - sw.y); sw = null; if (dx > 80 && dy < 60 && !document.getElementById('back-btn').hidden) router.back(); }, { passive: true });
     document.addEventListener('click', e => { const a = e.target.closest('a[href^="#/"]'); if (a && a.getAttribute('href') === location.hash) { e.preventDefault(); router.render(); } });
     HZ.gami.questsToday();
     HZ.sync.onChange(() => { if (location.hash === '#/settings') HZ.views.settings(); });

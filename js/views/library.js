@@ -38,7 +38,10 @@
       if (filters.sort === 'strokes') list = list.slice().sort((a, b) => a.s - b.s);
       else if (filters.sort === 'py') list = list.slice().sort((a, b) => HZ.baseSyl(a.py).localeCompare(HZ.baseSyl(b.py)));
       else if (filters.sort === 'hard') list = list.slice().sort((a, b) => srs.difficulty(b.ch) - srs.difficulty(a.ch));
-      ui.clear(grid).append(...list.map(tile));
+      ui.clear(grid);
+      const job = draw.job = {}; let i = 0;
+      const chunk = () => { if (draw.job !== job) return; grid.append(...list.slice(i, i + 240).map(tile)); i += 240; if (i < list.length) requestAnimationFrame(chunk); };
+      chunk(); // первые 240 сразу, остальные — по кадрам, чтобы страница не подвисала
       if (!list.length) grid.append(h('p.muted', 'Ничего не найдено'));
       count.textContent = `${list.length} из ${HZ.chars.length}`;
     }
@@ -48,7 +51,7 @@
     ui.clear(view).append(h('div.page',
       h('h1', 'Иероглифы'), HZ.libTabs('chars'),
       h('div.filters', q,
-        sel('hsk', [['', 'Все HSK'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3'], ['4', 'HSK 4'], ['5', 'Вне HSK']]),
+        sel('hsk', [['', 'Все HSK'], ['1', 'HSK 1'], ['2', 'HSK 2'], ['3', 'HSK 3'], ['4', 'HSK 4'], ['5', 'HSK 5'], ['6', 'Вне HSK']]),
         sel('theme', [['', 'Все темы'], ...Object.entries(HZ.themes)]),
         sel('state', [['', 'Любой статус'], ['new', 'Новые'], ['learn', 'Изучаются'], ['done', 'Выучены'], ['hard', 'Сложные']]),
         sel('sort', [['order', 'По порядку изучения'], ['strokes', 'По числу черт'], ['py', 'По пиньиню'], ['hard', 'По сложности']])),

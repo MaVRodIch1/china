@@ -64,6 +64,7 @@
         onclick: () => { if (a.onclick && a.onclick(close) === false) return; if (!a.keep) close(); }
       }, a.label))) : null);
     root.appendChild(box);
+    root.classList.toggle('anim', !root.classList.contains('open')); // плавное появление — только при первом открытии
     root.classList.add('open');
     root.onclick = e => { if (e.target === root) close(); };
     const first = box.querySelector('input,textarea,select');

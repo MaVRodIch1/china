@@ -115,13 +115,13 @@
     const fmx = Math.max(3, ...fc);
     const names = ['Сегодня', 'Завтра'];
     // уровни HSK
-    const hskRows = [1, 2, 3, 4].map(lv => {
+    const hskRows = [1, 2, 3, 4, 5].map(lv => {
       const cs = HZ.chars.filter(c => c.h === lv); if (!cs.length) return null;
       const m = cs.filter(c => srs.isMastered(srs.get(c.ch))).length, s = cs.filter(c => srs.get(c.ch)).length;
       return h('div.hsk-row', h('span', 'HSK ' + lv), h('div.stacked.sm', h('i.done', { style: { flex: m } }), h('i.learn', { style: { flex: s - m } }), h('i.new', { style: { flex: cs.length - s } })), h('small', `${m}/${cs.length}`));
     }).filter(Boolean);
     // слова по уровням
-    const wRows = [1, 2, 3, 4].map(lv => {
+    const wRows = [1, 2, 3, 4, 5].map(lv => {
       const ws = HZ.words.filter(w => w.h === lv);
       const m = ws.filter(w => srs.isMastered(srs.get(w.key))).length, s = ws.filter(w => srs.get(w.key)).length;
       return h('div.hsk-row', h('span', 'HSK ' + lv), h('div.stacked.sm', h('i.done', { style: { flex: m } }), h('i.learn', { style: { flex: s - m } }), h('i.new', { style: { flex: ws.length - s } })), h('small', `${m}/${ws.length}`));
