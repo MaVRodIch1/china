@@ -383,3 +383,5 @@ a.col-card:hover, button.col-card:hover { transform: translateY(-2px); } .col-ca
 .btn:active:not(:disabled), .icon-btn:active, .tile:active { transform: scale(.97); }
 .tile-grid > * { content-visibility: auto; contain-intrinsic-size: auto 96px; }
 @media (prefers-reduced-motion: reduce) { #view.view-in > *, .modal.anim, .modal.anim .modal-box { animation: none; } }
+.wk-hand { display: flex; gap: .7rem; align-items: center; } .wk-hand > div:last-child { display: grid; }
+.cr-canvas { width: min(100%, calc(76vh * 540 / 760)); margin: 0 auto; cursor: grab; }

@@ -141,7 +141,8 @@
   };
   const SH_MAX = 5;
   const shCost = (d, lv) => Math.round(d.price * Math.pow(1.9, lv));
-  const SLOT_COST = [0, 0, 0, 500, 2500, 10000];
+  const SLOT_COST = [0, 0, 0, 500, 2500, 10000]; // прежние слоты — только для возврата монет
+  const SOLO = 2.2; // одно оружие бьёт сильнее, чем раньше несколько
   const PET_MAX = 6;
   const petCost = n => Math.round(200 * Math.pow(2.5, n));
 
@@ -161,8 +162,13 @@
       v.slots = Math.max(3, Math.min(6, owned.length));
       v.eq = owned.slice(0, v.slots);
     }
-    v.slots = Math.max(3, Math.min(6, v.slots || 3));
-    v.eq = v.eq.filter(k => AR[k] && v.wp[k] > 0).slice(0, v.slots);
+    if (v.solo !== 1) { // одно оружие в руках: купленные слоты возвращаются монетами
+      let back = 0; for (let k = 3; k < Math.min(6, v.slots || 3); k++) back += SLOT_COST[k];
+      v.coins += back; v.solo = 1; v.slotRefund = back;
+    }
+    v.slots = 1;
+    v.eq = v.eq.filter(k => AR[k] && v.wp[k] > 0).slice(0, 1);
+    if (!v.eq.length) { const own = AR_ORDER.filter(k => v.wp[k] > 0).sort((a, b) => arCost(AR[b], v.wp[b]) - arCost(AR[a], v.wp[a])); if (own.length) v.eq = [own[0]]; }
     if (v.shield && !(v.shl[v.shield] > 0)) v.shield = null;
     if (v.heroV !== 2) { v.heroV = 2; v.skin = 'ninja'; } // новый герой — странник в соломенной шляпе
     if (v.skin !== 'ninja' && !HZ.evo.LINES[v.skin]) v.skin = 'ninja';
@@ -275,6 +281,7 @@
     const away = Math.min(4 * 3600, Math.max(0, (Date.now() - (v.last || Date.now())) / 1000));
     if (away > 60) { const g = incomeOf(v) * away * 0.5; v.coins += g; ui.toast(`🌙 Пока вас не было, ферма принесла ${fmt(g)} 🪙`, 'gold', 4500); }
     v.last = Date.now();
+    if (v.slotRefund) { ui.toast(`Теперь в руках одно оружие (сильнее в ${SOLO} раза). За прежние слоты возвращено ${fmt(v.slotRefund)} 🪙. Q / E — сменить оружие.`, 'gold', 6500); v.slotRefund = 0; }
     if (v.hp == null || v.hp <= 0) v.hp = maxHp(v);
     store.save();
 
@@ -287,7 +294,7 @@
       h('div.wk-top', h('div', h('div.evo-coin-row', h('span.evo-coin', '🪙'), el.coins), el.inc), h('div.wk-pills', el.lvl, el.loc, el.combo)),
       h('div.wk-bar', el.shop, h('button.btn.sm', { type: 'button', onclick: () => mapDialog() }, '🗺️ Карта'), el.mode, h('button.btn.sm', { type: 'button', onclick: () => heroPicker() }, '🥷 Герой'), el.snd, h('label.wk-src', h('span.muted.small', '📚'), src)),
       canvas,
-      h('p.muted.small.center', 'WASD или стрелки (на телефоне — ведите пальцем по полю), пробел или 💨 — рывок сквозь кляксы. Оружие из слотов бьёт само; нажмите на его значок на поле, чтобы сменить. Задание вверху экрана: найдите этот знак — получите монеты, опыт, лечение и печать 🌀. 8 печатей открывают портал босса. В бою с боссом верный знак наносит «удар знания». В лагере 🏕️ кляксы не трогают.'));
+      h('p.muted.small.center', 'WASD или стрелки (на телефоне — ведите пальцем по полю), пробел или 💨 — рывок сквозь кляксы. Оружие в руках бьёт само; на компьютере герой целится в кляксу у курсора. Q / E — сменить оружие, R — перезарядка. Задание вверху экрана: найдите этот знак — получите монеты, опыт, лечение и печать 🌀. 8 печатей открывают портал босса. В бою с боссом верный знак наносит «удар знания». В лагере 🏕️ кляксы не трогают.'));
 
     let L = LOCS[v.loc], deco = decoFor(v.loc);
     const P = { x: CAMP.x, y: CAMP.y + 40, face: 1, walk: 0, moving: false, mx: 0, inv: 2, kx: 0, ky: 0, aim: 0, atkT: 0, swingT: 0, recoilT: 0, hurtT: 0, dustT: 0, lvlT: 0, pose: null, poseEnd: 0, dashT: 0, dashCd: 0, dvx: 0, dvy: 0, still: 0, up: false, ghostT: 0 };
@@ -319,7 +326,9 @@
       }
     }
     const onReloadKey = ev => {
-      if (ev.code !== 'KeyR' || /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName)) return;
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName) || document.getElementById('modal').classList.contains('open')) return;
+      if (ev.code === 'KeyQ' || ev.code === 'KeyE') { ev.preventDefault(); cycleWeapon(ev.code === 'KeyE' ? 1 : -1); return; }
+      if (ev.code !== 'KeyR') return;
       let any = false;
       for (const id of v.eq) if (MAG[id] && !(rlT[id] > 0) && (ammo[id] == null ? MAG[id][0] : ammo[id]) < MAG[id][0]) { startReload(id); any = true; }
       if (any) floatText(P.x, P.y - 110, 'Перезарядка', '#ffc23d');
@@ -351,6 +360,15 @@
       else if (inRect(x, y, mm.zout)) { ev.stopPropagation(); ev.preventDefault(); mmZoom = Math.max(1, mmZoom - 1); }
       else if (x >= 6 && x <= 52 && y >= iy0 - 3 && y <= iy0 + n * 38) { ev.stopPropagation(); ev.preventDefault(); shop(y >= iy0 + v.eq.length * 38 ? 'shields' : 'arsenal'); }
     }, true);
+    // прицел курсором (компьютер): герой стреляет в кляксу, ближайшую к курсору
+    const mouse = { x: 0, y: 0, t: -1e9 };
+    canvas.addEventListener('pointermove', ev => {
+      if (ev.pointerType !== 'mouse') return;
+      const r = canvas.getBoundingClientRect();
+      mouse.x = cam.x + (ev.clientX - r.left) * VW / r.width; mouse.y = cam.y + (ev.clientY - r.top) * VH / r.height; mouse.t = performance.now();
+    });
+    canvas.addEventListener('pointerleave', () => { mouse.t = -1e9; });
+    const mouseAim = () => performance.now() - mouse.t < 4000;
     const cleanup = () => { stop = true; cancelAnimationFrame(raf); ctl.destroy(); window.removeEventListener('keydown', onDashKey); window.removeEventListener('keydown', onReloadKey); v.last = Date.now(); store.save(); };
     HZ.router.onLeave(() => { cleanup(); const n = session.right; if (n >= 5) { HZ.gami.addXP(n); HZ.gami.onGame(n, n + session.wrong); } else if (n) HZ.gami.addXP(n); });
 
@@ -459,10 +477,10 @@
     }
     function spawnTick() {
       const li = v.loc, lv = heroLvl(v);
-      let target = Math.min(26, 6 + 2 * li + Math.floor(lv / 3));
+      let target = Math.min(34, 9 + 3 * li + Math.floor(lv / 2));
       if (boss) target = Math.floor(target / 2);
       if (enemies.length >= target) return;
-      const far = Math.max(VW, VH) * .6 + 100;
+      const far = Math.max(VW, VH) * .55 + 40;
       for (let t = 0; t < 30; t++) {
         const x = 60 + Math.random() * (WW - 120), y = 60 + Math.random() * (WH - 120);
         if (Math.hypot(x - P.x, y - P.y) < far || Math.hypot(x - CAMP.x, y - CAMP.y) < CAMP.r + 250) continue;
@@ -478,7 +496,7 @@
       if (e.dead) return;
       o = o || {};
       const crit = Math.random() < .05 * v.ups.crit + (o.crit || 0);
-      dmg = dmg * dmgMul() * (crit ? 2 : 1) * (o.el === 'void' ? (e.isBoss ? 1.5 : 1.2) : 1);
+      dmg = dmg * dmgMul() * SOLO * (crit ? 2 : 1) * (o.el === 'void' ? (e.isBoss ? 1.5 : 1.2) : 1);
       dmg = Math.max(1, Math.round(dmg));
       e.hp -= dmg; e.hit = .12;
       const kb = e.isBoss ? .08 : 1; e.kx += (kx || 0) * kb; e.ky += (ky || 0) * kb;
@@ -584,6 +602,11 @@
     function floatText(x, y, text, color, life) { fx.push({ type: 'txt', x, y, text, color, t: 0, life: life || 1 }); }
     function burst(x, y, color, n) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = 60 + Math.random() * 160; fx.push({ type: 'dot', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 0, color }); } }
     function nearest(p, range, skip) {
+      if (p === P && mouseAim()) { // при прицеле курсором — клякса в досягаемости, ближайшая к курсору
+        let best = null, bd = Infinity;
+        for (const e of enemies) { if (e.dead || (skip && skip.has(e)) || Math.hypot(e.x - P.x, e.y - P.y) - e.r > range) continue; const d = Math.hypot(e.x - mouse.x, e.y - mouse.y + 20); if (d < bd) { bd = d; best = e; } }
+        return best;
+      }
       let best = null, bd = range;
       for (const e of enemies) { if (e.dead || (skip && skip.has(e))) continue; const d = Math.hypot(e.x - p.x, e.y - p.y) - e.r; if (d < bd) { bd = d; best = e; } }
       return best;
@@ -797,6 +820,7 @@
         P.dustT -= dt; if (P.dustT <= 0) { P.dustT = .12; fx.push({ type: 'dust', x: P.x - dx * 14 + (Math.random() - .5) * 10, y: P.y + 2, t: 0, r: 4 + Math.random() * 4 }); }
         if (!P.atkT) P.aim = Math.atan2(dy, dx);
       }
+      if (mouseAim() && P.atkT <= 0) { P.aim = Math.atan2(mouse.y - (P.y - 44), mouse.x - P.x); P.face = Math.cos(P.aim) >= 0 ? 1 : -1; }
       if (P.dashT > 0) {
         P.dashT -= dt; P.x += P.dvx * dt; P.y += P.dvy * dt;
         P.x = Math.max(30, Math.min(WW - 30, P.x)); P.y = Math.max(50, Math.min(WH - 20, P.y));
@@ -816,8 +840,8 @@
       if (!boss && seals() >= SEALS && dist(P, L.portal) < 60) startBoss();
 
       // кляксы
-      spawnT -= dt; if (spawnT <= 0) { spawnT = 1; spawnTick(); }
-      const aggro = 360 + 20 * v.loc;
+      spawnT -= dt; if (spawnT <= 0) { spawnT = .6; spawnTick(); }
+      const aggro = 900 + 60 * v.loc; // кляксы замечают героя издалека и бегут на него
       for (const e of enemies) {
         if (e.dead) continue;
         // стихии: поджог, яд, кровотечение, замедление
@@ -837,7 +861,7 @@
         else if (e.stun > 0) { e.stun -= dt; e.hit = Math.max(0, e.hit - dt); }
         else {
           let mx, my;
-          if (d < aggro && !camp) { mx = ex / d; my = ey / d; }
+          if (d < aggro && !camp) { const rush = d < 260 ? 1.6 : 1.4; mx = ex / d * rush; my = ey / d * rush; }
           else { e.wt -= dt; if (e.wt <= 0) { e.wa = Math.random() * 6.283; e.wt = 1.5 + Math.random() * 2; } mx = Math.cos(e.wa) * .45; my = Math.sin(e.wa) * .45; }
           e.x += (mx * e.sp * (1 - slowK) + e.kx) * dt; e.y += (my * e.sp * (1 - slowK) + e.ky) * dt;
           e.hit = Math.max(0, e.hit - dt);
@@ -1072,7 +1096,7 @@
     function ninjaPose() {
       if (P.dashT > 0) return 'dash';
       if (P.pose) return P.pose.name;
-      if (!P.moving && P.still > 1.4 && inCamp(P) && !boss) return 'meditate';
+      if (!P.moving && P.still > 1.4 && inCamp(P) && !boss && !mouseAim()) return 'meditate';
       return null;
     }
     // красные концы шарфа развеваются за спиной (в координатах спрайта, «за спиной» — слева)
@@ -1105,7 +1129,7 @@
       if (P.lvlT > 0) { ctx.fillStyle = `rgba(255,211,77,${Math.min(.5, P.lvlT * .4)})`; ctx.beginPath(); ctx.arc(sx, sy - 44, 50 + (1.5 - P.lvlT) * 30, 0, 6.283); ctx.fill(); }
       if (pose === 'meditate') { ctx.fillStyle = `rgba(255,196,90,${.16 + .08 * Math.sin(now / 300)})`; ctx.beginPath(); ctx.arc(sx, sy - 42, 58, 0, 6.283); ctx.fill(); }
       const hand = pose ? null : heldWeapon(), behind = hand && Math.sin(P.aim) < -.3;
-      if (behind) drawHand(hand, sx, sy, 40);
+      if (behind) drawHand(hand, sx, sy, 49, true);
       const T = im => (P.hurtT > 0 ? tinted(im, 'rgba(255,40,40,.55)') : im), ok = im => im.complete && im.naturalWidth;
       ctx.save();
       if (P.inv > 0 && P.hurtT <= 0 && P.dashT <= 0 && Math.floor(now / 90) % 2) ctx.globalAlpha = .55;
@@ -1116,7 +1140,7 @@
         if (ok(im)) ctx.drawImage(T(im), -m.ax, -m.ay, m.w, m.h);
       } else {
         const up = false, nm = 'idle', m = NJ[nm]; // всегда лицом к игроку
-        const top = NIMG(nm + '-top'), lg = NIMG(nm + '-legl'), rg = NIMG(nm + '-legr');
+        const top = NIMG(nm + (hand ? '-top-nf' : '-top')), lg = NIMG(nm + '-legl'), rg = NIMG(nm + '-legr');
         const A = walking ? .17 : 0, s1 = Math.sin(ph), c1 = Math.cos(ph);
         const bob = walking ? -Math.abs(s1) * 5 : 0, br = walking ? 0 : Math.sin(now / 520) * .022;
         ctx.rotate(walking ? P.mx * .07 : 0);
@@ -1134,7 +1158,7 @@
         }
       }
       ctx.restore();
-      if (hand && !behind) drawHand(hand, sx, sy, 40);
+      if (hand && !behind) drawHand(hand, sx, sy, 49, true);
     }
     function drawHero(now, ox, oy, lv) {
       if (v.skin === 'ninja') return drawNinja(now, P.x - ox, P.y - oy, lv);
@@ -1164,7 +1188,13 @@
       ctx.restore();
       if (hand && !behind) drawHand(hand, sx, sy - hop);
     }
-    function drawHand(d, sx, sy, hh0 = 32) {
+    function fist(x, y, r) { // кулак странника (чёрная перчатка с бронзовым ободком)
+      r *= .72;
+      ctx.fillStyle = '#1b1416'; ctx.beginPath(); ctx.ellipse(x, y, r * 1.1, r, 0, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(110,70,35,.85)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.beginPath(); ctx.arc(x - r * .3, y - r * .35, r * .3, 0, 6.283); ctx.fill();
+    }
+    function drawHand(d, sx, sy, hh0 = 32, held) {
       const im = wImg(d, 30); if (!im) return;
       const melee = d.cls === 'melee' || (d.cat === 'magic' && d.img);
       let a = P.aim;
@@ -1173,15 +1203,20 @@
       const reloading = MAG[d.id] && rlT[d.id] > 0, rp = reloading ? 1 - rlT[d.id] / rlTime(d.id) : 0;
       const bob = P.moving ? Math.sin(P.walk * 2) * 2.2 : Math.sin(now / 480) * 1.2;
       if (reloading) a += Math.sin(rp * Math.PI) * 1.1 * (Math.cos(P.aim) >= 0 ? 1 : -1); // наклон вниз и обратно при смене магазина
-      const hx = sx + Math.cos(P.aim) * (18 - rec), hy = sy - hh0 + Math.sin(P.aim) * 10 + bob + (reloading ? Math.sin(rp * Math.PI) * 6 : 0);
+      const hx = held ? sx + P.face * 4 + Math.cos(P.aim) * (8 - rec) : sx + Math.cos(P.aim) * (18 - rec), hy = sy - hh0 + Math.sin(P.aim) * (held ? 6 : 10) + bob + (reloading ? Math.sin(rp * Math.PI) * 6 : 0);
       ctx.save(); ctx.translate(hx, hy); ctx.rotate(a);
       if (Math.cos(a) < 0) ctx.scale(1, -1);
       if (melee) ctx.rotate(Math.PI / 2 - .2);
-      const size = melee ? 54 : d.cls === 'grenade' || d.cls === 'throw' || d.cls === 'boomerang' ? 30 : 58;
+      const small = d.cls === 'grenade' || d.cls === 'throw' || d.cls === 'boomerang', size = (melee ? 54 : small ? 30 : 58) * (held ? .88 : 1);
       const k = size / Math.max(im.naturalWidth || im.width, im.naturalHeight || im.height), w = (im.naturalWidth || im.width) * k, hh = (im.naturalHeight || im.height) * k;
       if (d.el) { ctx.shadowColor = ELEM[d.el].col; ctx.shadowBlur = 10 + 5 * Math.sin(now / 180); }
       if (melee) ctx.drawImage(im, -w / 2, -hh * .85, w, hh); else ctx.drawImage(im, -w * .25, -hh / 2, w, hh);
       ctx.shadowBlur = 0;
+      if (held) { // кулаки на рукояти: у меча — на рукояти, у ружья — на рукояти и цевье
+        if (melee) fist(0, hh * .08, 5.2);
+        else if (small) fist(-2, 2, 5);
+        else { fist(-1, 3, 5.2); if (w > 34) fist(w * .32, 2, 4.8); }
+      }
       if (!melee && P.flashT > 0 && !reloading) { // вспышка выстрела у дула
         const fx0 = w * .78, r0 = 9 + Math.random() * 6, col = d.el ? ELEM[d.el].col : AR[d.id].st(1).col || '#ffd34d';
         ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = col; ctx.beginPath();
@@ -1346,9 +1381,11 @@
         if (d > 120) {
           const nj = v.skin === 'ninja', ar = nj ? 86 : 70, ax = P.x - ox + Math.cos(a) * ar, ay = P.y - oy - (nj ? 46 : 30) + Math.sin(a) * ar, pul = 1 + Math.sin(now / 150) * .12;
           ctx.save(); ctx.translate(ax, ay); ctx.rotate(a); ctx.scale(pul, pul);
-          const ai = SCN('arrow');
-          if (SCN_OK(ai)) { ctx.rotate(Math.PI); ctx.drawImage(ai, -16, -17, 31, 34); }
-          else { ctx.fillStyle = '#f2b53a'; ctx.strokeStyle = '#7a4a00'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-8, -11); ctx.lineTo(-3, 0); ctx.lineTo(-8, 11); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+          // стрелка: остриё точно в сторону знака (+ хвост), с тенью и обводкой
+          ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.moveTo(24, 3); ctx.lineTo(2, -11); ctx.lineTo(2, -4); ctx.lineTo(-16, -4); ctx.lineTo(-16, 10); ctx.lineTo(2, 10); ctx.lineTo(2, 17); ctx.closePath(); ctx.fill();
+          const ag = ctx.createLinearGradient(0, -14, 0, 14); ag.addColorStop(0, '#ffd56a'); ag.addColorStop(1, '#f08a1c');
+          ctx.fillStyle = ag; ctx.strokeStyle = '#6b3a00'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+          ctx.beginPath(); ctx.moveTo(22, 0); ctx.lineTo(0, -14); ctx.lineTo(0, -6); ctx.lineTo(-18, -6); ctx.lineTo(-18, 6); ctx.lineTo(0, 6); ctx.lineTo(0, 14); ctx.closePath(); ctx.fill(); ctx.stroke();
           ctx.restore();
         }
       }
@@ -1481,31 +1518,22 @@
       v.coins -= c; v.wp[id]++;
       if (lv === 0) {
         ui.sfx('level'); ui.confetti(50);
-        if (v.eq.length < v.slots) { v.eq.push(id); ui.toast(`Новое оружие: ${d.name} — сразу в слоте!`, 'gold'); }
-        else ui.toast(`Новое оружие: ${d.name}. Слоты заняты — снимите что-нибудь, чтобы взять его.`, 'gold', 4000);
+        v.eq = [id]; ui.toast(`Новое оружие: ${d.name} — сразу в руках! Q / E — сменить`, 'gold');
       } else ui.sfx('ok');
       touchW(); hud(); shop('arsenal');
     }
     function toggleEq(id) {
-      const i = v.eq.indexOf(id);
-      if (i >= 0) { if (v.eq.length <= 1) return ui.toast('Хотя бы одно оружие должно быть в руках'); v.eq.splice(i, 1); }
-      else { if (v.eq.length >= v.slots) return swapDialog(id); v.eq.push(id); ui.sfx('ok'); }
-      touchW(); shop('arsenal');
+      if (v.eq[0] === id) return ui.toast('Это оружие уже в руках');
+      takeWeapon(id); shop('arsenal');
     }
-    // все слоты заняты: выбрать, какое оружие заменить
-    function swapDialog(id) {
-      const keep = (document.querySelector('#modal .modal-body') || {}).scrollTop || 0;
-      const back = () => { shop('arsenal'); const mb = document.querySelector('#modal .modal-body'); if (mb) mb.scrollTop = keep; };
-      const list = h('div.wk-swap', v.eq.map((k, i) => h('button.wk-ar.wk-swap-b', { type: 'button', onclick: () => { v.eq[i] = id; touchW(); ui.sfx('ok'); ui.toast(`${AR[id].name} — в слоте вместо «${AR[k].name}»`); back(); } },
-        h('div.wk-ar-img', icoNode(AR[k])), h('div.wk-ar-t', h('b', AR[k].name, h('span.muted', ` · ур. ${v.wp[k]}`)), h('small.muted', infoOf(AR[k], AR[k].st(v.wp[k])))), h('span.chip.sm', '⇄'))));
-      const acts = [{ label: '← Назад', keep: true, onclick: back }];
-      if (v.slots < 6) acts.unshift({ label: `＋ слот · 🪙 ${fmt(SLOT_COST[v.slots])}`, keep: true, onclick: () => { if (v.coins < SLOT_COST[v.slots]) return ui.toast('Не хватает монет'); v.coins -= SLOT_COST[v.slots]; v.slots++; v.eq.push(id); ui.sfx('level'); touchW(); hud(); back(); } });
-      ui.modal(`⇄ Взять «${AR[id].name}»`, h('div', h('p.muted.small', `Все ${v.slots} слота заняты. Нажмите на оружие, которое заменить:`), list), acts);
+    function takeWeapon(id) {
+      v.eq = [id]; P.pose = null; ui.sfx('ok'); touchW();
+      floatText(P.x, P.y - 120, AR[id].name, '#ffd34d', 1.2);
     }
-    function buySlot() {
-      if (v.slots >= 6) return;
-      const c = SLOT_COST[v.slots]; if (v.coins < c) return ui.toast('Не хватает монет');
-      v.coins -= c; v.slots++; ui.sfx('level'); touchW(); hud(); shop('arsenal');
+    // Q / E — предыдущее / следующее купленное оружие
+    function cycleWeapon(dir) {
+      const own = AR_ORDER.filter(k => v.wp[k] > 0); if (own.length < 2) return;
+      const i = own.indexOf(v.eq[0]); takeWeapon(own[(i + dir + own.length) % own.length]);
     }
     function buyShield(id) {
       const d = SHIELDS[id], lv = v.shl[id] || 0; if (lv >= SH_MAX || !arOpen(v, d)) return;
@@ -1524,10 +1552,10 @@
     const icoNode = d => d.img ? h('img.wk-wimg', { src: `img/wpn/${d.img}.webp`, alt: d.name }) : h('span.wk-wico', d.ico);
     function arsenalTab() {
       const cats = h('div.wk-tabs.small', [['all', 'Все'], ...Object.entries(CATS)].map(([k, t]) => h('button.btn.sm' + (k === arCat ? '.primary' : ''), { type: 'button', onclick: () => { arCat = k; shop('arsenal'); } }, t)));
+      const cur = AR[v.eq[0]];
       const slotRow = h('div.wk-slots',
-        h('div', h('b', `Слоты оружия: ${v.eq.length}/${v.slots}`), h('small.muted', ' — всё из слотов бьёт само. Нажмите на оружие в слоте, чтобы снять; «Взять» / «⇄ Заменить» — чтобы поставить.')),
-        h('div.wk-eqrow', v.eq.map(id => h('button.wk-eqi', { type: 'button', title: 'Снять: ' + AR[id].name, 'aria-label': 'Снять: ' + AR[id].name, onclick: () => toggleEq(id) }, icoNode(AR[id]))), Array.from({ length: v.slots - v.eq.length }, () => h('span.wk-eqi.empty', '＋'))),
-        v.slots < 6 ? h('button.btn.sm' + (v.coins >= SLOT_COST[v.slots] ? '.primary' : ''), { type: 'button', onclick: buySlot }, `＋ слот · 🪙 ${fmt(SLOT_COST[v.slots])}`) : h('span.chip.sm.done', 'все 6 слотов'));
+        h('div.wk-hand', cur ? h('div.wk-ar-img', icoNode(cur)) : null, h('div', h('b', cur ? `В руках: ${cur.name}` : 'В руках ничего нет'), h('small.muted', cur ? ` · ур. ${v.wp[cur.id]} · ${infoOf(cur, cur.st(v.wp[cur.id]))}` : ''))),
+        h('small.muted', `Оружие одно — герой держит его в руках, и оно бьёт в ${SOLO} раза сильнее. «✋ В руки» — сменить; в игре Q / E листают купленное, на компьютере герой целится туда, куда смотрит курсор.`));
       const list = AR_ORDER.filter(id => arCat === 'all' || AR[id].cat === arCat).map(id => {
         const d = AR[id], lv = v.wp[id], open = arOpen(v, d), st = d.st(Math.max(1, lv)), nx = lv && lv < d.max ? d.st(lv + 1) : null, eq = v.eq.includes(id), c = arCost(d, lv);
         return h('div.wk-ar' + (eq ? '.eq' : '') + (open ? '' : '.locked'),
@@ -1536,7 +1564,7 @@
             h('small.muted', open ? (lv ? infoOf(d, st) + (nx ? `  →  ${infoOf(d, nx)}` : '') : infoOf(d, st)) : `🔒 Победите босса «${LOCS[d.unlock].boss.name}»`)),
           h('div.wk-ar-b',
             open && lv < d.max ? h('button.btn.sm' + (v.coins >= c ? '.afford' : ''), { type: 'button', onclick: () => buyAr(id) }, (lv ? '⬆ ' : 'Купить ') + '🪙 ' + fmt(c)) : lv >= d.max ? h('span.chip.sm.done', 'MAX') : null,
-            lv ? h('button.btn.sm' + (eq ? '.primary' : ''), { type: 'button', title: eq ? 'Снять со слота' : '', onclick: () => toggleEq(id) }, eq ? '✓ В слоте' : v.eq.length >= v.slots ? '⇄ Заменить' : 'Взять') : null));
+            lv ? h('button.btn.sm' + (eq ? '.primary' : ''), { type: 'button', onclick: () => toggleEq(id) }, eq ? '✓ В руках' : '✋ В руки') : null));
       });
       return [slotRow, cats, ...list];
     }
@@ -1563,7 +1591,7 @@
         if (tab === 'eco') { const pc = petCost(v.pets.length), full = v.pets.length >= PET_MAX; rows.push(row('🐾', `Питомцы · ${v.pets.length}/${PET_MAX}`, 'Бегут за героем, стреляют по кляксам и приносят +2,5 🪙/с каждый', pc, v.coins >= pc, full, buyPet)); }
       }
       const lv = heroLvl(v);
-      const stats = h('p.muted.small', `Герой: ур. ${lv}, здоровье ${maxHp(v)}, броня −${Math.round((1 - armorMul(v)) * 100)}%, урон +${Math.round((dmgMul() - 1) * 100)}%. Клякс побеждено: ${v.kills}, боссов: ${v.bossKills.reduce((a, b) => a + b, 0)}.`);
+      const stats = h('p.muted.small', `Герой: ур. ${lv}, здоровье ${maxHp(v)}, броня −${Math.round((1 - armorMul(v)) * 100)}%, урон ×${(dmgMul() * SOLO).toFixed(1)}. Клякс побеждено: ${v.kills}, боссов: ${v.bossKills.reduce((a, b) => a + b, 0)}.`);
       const scrollY = (document.querySelector('#modal .modal-body') || {}).scrollTop || 0;
       ui.modal('🛒 Арсенал и магазин · 🪙 ' + fmt(v.coins), h('div.evo-ups', tabs, stats, ...rows), [{ label: 'Закрыть', primary: true }]);
       const mb = document.querySelector('#modal .modal-body'); if (mb && scrollY) mb.scrollTop = scrollY;
