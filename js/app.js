@@ -61,9 +61,9 @@
           case 'valley': nav = 'games'; HZ.valley.view(); break;
           case 'evo': nav = 'evo'; HZ.evo.view(); break;
           case 'library': HZ.views.library(); break;
-          case 'char': nav = 'library'; HZ.views.char(a); break;
+          case 'char': nav = 'library'; HZ.views.char(a); HZ.offerAdd(HZ.byChar[a]); break;
           case 'words': nav = 'library'; HZ.views.words(); break;
-          case 'word': nav = 'library'; HZ.views.word(a); break;
+          case 'word': nav = 'library'; HZ.views.word(a); HZ.offerAdd(HZ.wordByKey['w:' + a]); break;
           case 'collections': HZ.views.collections(); break;
           case 'collection': nav = 'collections'; HZ.views.collection(parts.slice(1).join('/')); break;
           case 'stats': HZ.views.stats(); break;

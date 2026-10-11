@@ -420,3 +420,10 @@ button.wk-perk { cursor: pointer; transition: transform .12s, border-color .12s,
   .game-card .gdesc { -webkit-line-clamp: 2; font-size: .8rem; } .game-card .ico { width: 2.5rem; height: 2.5rem; font-size: 1.4rem; }
   .daily-ch { font-size: 3rem; }
 }
+
+/* предложение добавить открытое в подборку */
+.qa-bar { position: fixed; left: 0; right: 0; margin: 0 auto; bottom: 18px; z-index: 95; width: min(94vw, 460px); display: grid; gap: .45rem; padding: .7rem .8rem .9rem; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,.25); overflow: hidden; animation: pop .2s ease-out; }
+.qa-row { display: flex; gap: .5rem; align-items: center; } .qa-ch { font-size: 2rem; line-height: 1; min-width: 2.2rem; } .qa-txt { display: grid; flex: 1; min-width: 0; } .qa-sel { width: 150px; padding: .3rem .5rem; font-size: .85rem; } .qa-off { margin-left: auto; opacity: .7; }
+.qa-time { position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; background: var(--accent); transform-origin: left; animation: qaTime 10s linear forwards; }
+@keyframes qaTime { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (max-width: 800px) { .qa-bar { bottom: 84px; } .qa-sel { width: 118px; } .qa-row { flex-wrap: wrap; } }
